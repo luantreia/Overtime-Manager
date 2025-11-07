@@ -15,8 +15,8 @@ const PlayerRequests: React.FC<Props> = ({ solicitudes = [], onCancelar, onAcept
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <header className="mb-4">
-        <h3 className="text-lg font-semibold">Solicitudes</h3>
-        <p className="text-sm text-slate-500">Solicitudes de unión/invitación relacionadas con este jugador.</p>
+        <h3 className="text-lg font-semibold">Solicitudes Pendientes</h3>
+        <p className="text-sm text-slate-500">Solicitudes enviadas que están siendo revisadas por los administradores.</p>
       </header>
 
       {solicitudes.length === 0 ? (

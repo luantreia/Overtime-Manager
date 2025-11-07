@@ -4,7 +4,7 @@ import { getTemporadasDelJugador } from '../services/temporadasService';
 import type { TemporadaJugador } from '../../../types';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 
-const CompetenciasPage = () => {
+const TemporadasPage = () => {
   const { addToast } = useToast();
   const { jugadorSeleccionado } = useJugador();
   const [temporadas, setTemporadas] = useState<TemporadaJugador[]>([]);
@@ -157,4 +157,4 @@ const CompetenciasPage = () => {
   );
 };
 
-export default CompetenciasPage;
+export default TemporadasPage;

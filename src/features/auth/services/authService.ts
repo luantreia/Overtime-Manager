@@ -18,14 +18,14 @@ type BackendLoginResponse = {
 };
 
 type BackendProfileResponse = {
-  id?: string;
+  id: string;
   nombre: string;
   email: string;
   rol: RolUsuario | string;
 };
 
 const mapUsuario = (usuario: BackendLoginResponse['user'] | BackendProfileResponse): Usuario => ({
-  id: usuario.id ?? usuario.email,
+  id: usuario.id,
   nombre: usuario.nombre,
   email: usuario.email,
   rol: (usuario.rol as RolUsuario) ?? 'lector',

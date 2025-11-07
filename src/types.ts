@@ -119,6 +119,8 @@ export interface SolicitudCompetencia {
   fechaSolicitud: string;
 }
 
+
+
 export interface EstadisticaJugador {
   jugador: Jugador;
   partidosJugados: number;
@@ -162,4 +164,26 @@ export interface SolicitudEdicion {
   estado: SolicitudEdicionEstado;
   creadoPor: string;
   fechaCreacion?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TemporadaJugador {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  fechaInicio?: string;
+  fechaFin?: string;
+  competencia: {
+    id: string;
+    nombre: string;
+    modalidad: string;
+    categoria: string;
+  };
+  equipo: {
+    id: string;
+    nombre: string;
+  };
+  estado: string;
+  rol?: string;
 }

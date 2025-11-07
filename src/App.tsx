@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import EquipoPage from './features/equipo/pages/EquipoPage';
 import PlayerProfilePage from './features/jugadores/pages/PlayerProfilePage';
-import CompetenciasPage from './features/competencias/pages/CompetenciasPage';
+import TemporadasPage from './features/competencias/pages/TemporadasPage';
 import PartidosPage from './features/partidos/pages/PartidosPage';
 import EstadisticasPage from './features/estadisticas/pages/EstadisticasPage';
 import NotificacionesPage from './features/notificaciones/pages/NotificacionesPage';
@@ -16,7 +16,7 @@ const navLinks = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/equipo', label: 'Equipo' },
   { to: '/jugadores', label: 'Jugadores' },
-  { to: '/competencias', label: 'Competencias' },
+  { to: '/competencias', label: 'Temporadas' },
   { to: '/partidos', label: 'Partidos' },
   { to: '/estadisticas', label: 'Estadísticas' },
   { to: '/notificaciones', label: 'Notificaciones' },
@@ -24,7 +24,7 @@ const navLinks = [
 ];
 
 const App = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -32,11 +32,11 @@ const App = () => {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 font-bold text-white shadow shadow-brand-500/40">
-              OT
+              OTM
             </span>
             <div>
               <p className="text-sm font-semibold text-slate-900">Overtime Manager</p>
-              <p className="text-xs text-slate-500">Panel de entrenadores</p>
+              <p className="text-xs text-slate-500">Panel de Jugadores y Representantes</p>
             </div>
           </div>
 
@@ -109,7 +109,7 @@ const App = () => {
             path="/competencias"
             element={
               <ProtectedRoute>
-                <CompetenciasPage />
+                <TemporadasPage />
               </ProtectedRoute>
             }
           />

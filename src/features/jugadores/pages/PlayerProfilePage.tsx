@@ -3,14 +3,15 @@ import { useParams } from 'react-router-dom';
 import PlayerDetails from '../components/PlayerDetails';
 import PlayerTeams from '../components/PlayerTeams';
 import ModalSolicitarIngreso from '../components/modals/ModalSolicitarIngreso';
-import PlayerRequests from '../components/PlayerRequests';
+import PlayerSolicitudesEdicion from '../components/PlayerSolicitudesEdicion';
 import PlayerStats from '../components/PlayerStats';
 import { getJugadorById, updateJugador } from '../services/jugadorService';
-import { useJugador } from '../../../app/providers/JugadorContext';
-import { getEquiposDelJugador, getSolicitudesPorJugador, solicitarIngresoEquipo, eliminarSolicitud, actualizarEstadoJugador } from '../services/jugadorEquipoService';
+import { getEquiposDelJugador } from '../services/jugadorEquipoService';
+import { solicitarCrearContratoJugadorEquipo } from '../services/solicitudesJugadorEquipoService';
 import { getResumenEstadisticasJugador } from '../../estadisticas/services/estadisticasService';
 import type { Jugador } from '../../../types';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
+import { useJugador } from '../../../app/providers/JugadorContext';
 
 const PlayerProfilePage: React.FC = () => {
   const { playerId } = useParams();
@@ -18,7 +19,6 @@ const PlayerProfilePage: React.FC = () => {
   const [jugador, setJugador] = useState<Jugador | null>(null);
   const [loading, setLoading] = useState(false);
   const [equipos, setEquipos] = useState([] as any[]);
-  const [solicitudes, setSolicitudes] = useState([] as any[]);
   const [estadisticas, setEstadisticas] = useState<any[]>([]);
 
   const { jugadorSeleccionado } = useJugador();
@@ -65,14 +65,12 @@ const PlayerProfilePage: React.FC = () => {
           return;
         }
 
-        const [eqs, sols, resumen] = await Promise.all([
+        const [eqs, resumen] = await Promise.all([
           getEquiposDelJugador(jugador.id),
-          getSolicitudesPorJugador(jugador.id),
           getResumenEstadisticasJugador(jugador.id),
         ]);
         if (cancelled) return;
         setEquipos(eqs || []);
-        setSolicitudes(sols || []);
         // resumen may contain estadisticasPorPartido; map to a simple estadistica array if possible
         const stats = (resumen?.estadisticasPorPartido || []).map((p: any) => ({
           jugador: jugador,
@@ -97,9 +95,8 @@ const PlayerProfilePage: React.FC = () => {
   const refreshExtras = async () => {
     if (!jugador?.id) return;
     try {
-      const [eqs, sols] = await Promise.all([getEquiposDelJugador(jugador.id), getSolicitudesPorJugador(jugador.id)]);
+      const eqs = await getEquiposDelJugador(jugador.id);
       setEquipos(eqs || []);
-      setSolicitudes(sols || []);
     } catch (err) {
       // ignore
     }
@@ -116,8 +113,8 @@ const PlayerProfilePage: React.FC = () => {
 
   const handleSolicitarIngreso = useCallback(async (payload: { jugadorId: string; equipoId: string; fechaInicio?: string; fechaFin?: string; rol?: string }) => {
     try {
-      await solicitarIngresoEquipo(payload);
-      addToast({ type: 'success', title: 'Solicitud enviada', message: 'La solicitud fue enviada al equipo.' });
+      await solicitarCrearContratoJugadorEquipo(payload);
+      addToast({ type: 'success', title: 'Solicitud enviada', message: 'La solicitud será revisada por los administradores del equipo.' });
       await refreshExtras();
     } catch (err) {
       console.error('Error solicitando ingreso:', err);
@@ -125,39 +122,6 @@ const PlayerProfilePage: React.FC = () => {
       throw err;
     }
   }, [addToast]);
-
-  const handleCancelarSolicitud = async (solicitudId: string) => {
-    try {
-      await eliminarSolicitud(solicitudId);
-      addToast({ type: 'success', title: 'Solicitud cancelada', message: 'La solicitud fue cancelada.' });
-      await refreshExtras();
-    } catch (err) {
-      console.error('Error cancelando solicitud:', err);
-      addToast({ type: 'error', title: 'Error', message: 'No pudimos cancelar la solicitud.' });
-    }
-  };
-
-  const handleAceptarSolicitud = async (solicitudId: string) => {
-    try {
-      await actualizarEstadoJugador(solicitudId, { estado: 'aceptado' });
-      addToast({ type: 'success', title: 'Solicitud aceptada', message: 'Se aceptó la solicitud.' });
-      await refreshExtras();
-    } catch (err) {
-      console.error('Error aceptando solicitud:', err);
-      addToast({ type: 'error', title: 'Error', message: 'No pudimos aceptar la solicitud.' });
-    }
-  };
-
-  const handleRechazarSolicitud = async (solicitudId: string) => {
-    try {
-      await actualizarEstadoJugador(solicitudId, { estado: 'rechazado' });
-      addToast({ type: 'success', title: 'Solicitud rechazada', message: 'Se rechazó la solicitud.' });
-      await refreshExtras();
-    } catch (err) {
-      console.error('Error rechazando solicitud:', err);
-      addToast({ type: 'error', title: 'Error', message: 'No pudimos rechazar la solicitud.' });
-    }
-  };
 
   const handleSave = async (payload: Partial<Jugador>) => {
     if (!jugador) return;
@@ -199,12 +163,7 @@ const PlayerProfilePage: React.FC = () => {
 
         <div className="lg:col-span-2 space-y-6">
           <PlayerTeams jugador={jugador} equipos={equipos} onSolicitar={(id) => openSolicitarModal(id)} />
-          <PlayerRequests
-            solicitudes={solicitudes}
-            onCancelar={handleCancelarSolicitud}
-            onAceptar={handleAceptarSolicitud}
-            onRechazar={handleRechazarSolicitud}
-          />
+          <PlayerSolicitudesEdicion jugadorId={jugador.id} />
         </div>
       </div>
       <ModalSolicitarIngreso
