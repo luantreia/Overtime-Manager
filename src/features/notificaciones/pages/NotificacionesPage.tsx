@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  getHistorialSolicitudesJugadorEquipo,
-  getSolicitudesJugadores,
-  getSolicitudesPorJugador,
-  getHistorialSolicitudesPorJugador,
-} from '../../jugadores/services/jugadorEquipoService';
+import { getSolicitudesPorJugador, getHistorialSolicitudesPorJugador } from '../../jugadores/services/jugadorEquipoService';
 import type { SolicitudJugador, ContratoJugadorResumen } from '../../../types';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
@@ -54,7 +49,7 @@ const NotificacionesPage = () => {
     return () => {
       cancelado = true;
     };
-  }, [jugadorSeleccionado]);
+  }, [jugadorSeleccionado?.id, addToast]);
 
   const historialAgrupado = useMemo(() => {
     if (historial.length === 0) return [] as ContratoJugadorResumen[];

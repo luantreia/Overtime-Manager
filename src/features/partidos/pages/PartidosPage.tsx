@@ -1,15 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import PartidoCard from '../../../shared/components/PartidoCard/PartidoCard';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { getEquiposDelJugador } from '../../jugadores/services/jugadorEquipoService';
-import {
-  actualizarPartido,
-  getAlineacion,
-  getPartido,
-  getPartidos,
-} from '../services/partidoService';
+import { getPartido, getPartidos } from '../services/partidoService';
 import { InvalidObjectIdError } from '../../../utils/validateObjectId';
-import type { JugadorPartido, Partido, Equipo } from '../../../types';
+import type { Partido, Equipo } from '../../../types';
 import { ModalPartidoAdmin } from '../components';
 import { useToken } from '../../../app/providers/AuthContext';
 // Crear partidos desde el flujo de jugador está deshabilitado (no permitimos crear amistosos aquí)
@@ -22,13 +17,11 @@ const PartidosPage = () => {
   const { jugadorSeleccionado } = useJugador();
   const { addToast } = useToast();
   const [equipos, setEquipos] = useState<Equipo[]>([]);
-  const [seleccionado, setSeleccionado] = useState<Partido | null>(null);
+  // eliminado: seleccionado no se usa en la UI
   const [proximos, setProximos] = useState<Partido[]>([]);
   const [recientes, setRecientes] = useState<Partido[]>([]);
-  const [alineacion, setAlineacion] = useState<JugadorPartido[]>([]);
   const [partidoEquipoContext, setPartidoEquipoContext] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [detalleLoading, setDetalleLoading] = useState(false);
   const [modalAdminAbierto, setModalAdminAbierto] = useState(false);
   const [partidoAdminId, setPartidoAdminId] = useState<string | null>(null);
   const [alineacionModalAbierto, setAlineacionModalAbierto] = useState(false);
@@ -101,14 +94,13 @@ const PartidosPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [jugadorSeleccionado?.id]);
+  }, [jugadorSeleccionado?.id, addToast]);
 
   useEffect(() => {
     const jugadorId = jugadorSeleccionado?.id;
     if (!jugadorId) {
       setProximos([]);
       setRecientes([]);
-      setSeleccionado(null);
       setEquipos([]);
       return;
     }
@@ -119,14 +111,8 @@ const PartidosPage = () => {
 
   const handleSeleccionar = async (partidoId: string) => {
     try {
-      setDetalleLoading(true);
       const equipoContext = partidoEquipoContext[partidoId];
-      const [detalle, jugadores] = await Promise.all([
-        getPartido(partidoId, equipoContext),
-        getAlineacion(partidoId),
-      ]);
-      setSeleccionado(detalle);
-      setAlineacion(jugadores);
+      await getPartido(partidoId, equipoContext);
       setPartidoAdminId(partidoId);
       setModalAdminAbierto(true);
     } catch (error) {
@@ -136,8 +122,6 @@ const PartidosPage = () => {
       } else {
         addToast({ type: 'error', title: 'Error', message: 'No pudimos cargar el detalle del partido' });
       }
-    } finally {
-      setDetalleLoading(false);
     }
   };
 
@@ -161,9 +145,7 @@ const PartidosPage = () => {
     setPartidoInfoId(null);
   };
 
-  const handleAlineacionActualizada = (jugadores: JugadorPartido[]) => {
-    setAlineacion(jugadores);
-  };
+  // eliminado: handler sin uso real en la UI
 
   if (!jugadorSeleccionado) {
     return (
@@ -200,7 +182,6 @@ const PartidosPage = () => {
             void refreshPartidos();
           }}
           equipoId={partidoAdminId ? partidoEquipoContext[partidoAdminId] : equipos[0]?.id}
-          onAlineacionActualizada={handleAlineacionActualizada}
         />
       ) : null}
 
@@ -209,8 +190,7 @@ const PartidosPage = () => {
         equipoId={partidoAlineacionId ? partidoEquipoContext[partidoAlineacionId] : equipos[0]?.id}
         isOpen={alineacionModalAbierto && Boolean(partidoAlineacionId)}
         onClose={handleCerrarAlineacion}
-        onSaved={(jugadores) => {
-          handleAlineacionActualizada(jugadores);
+        onSaved={() => {
           handleCerrarAlineacion();
         }}
       />

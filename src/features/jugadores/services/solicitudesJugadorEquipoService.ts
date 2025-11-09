@@ -1,6 +1,5 @@
 import { crearSolicitudEdicion, obtenerSolicitudesEdicion, actualizarSolicitudEdicion } from './solicitudesEdicionService';
-import type { SolicitudCrearJugadorEquipo, SolicitudEliminarJugadorEquipo } from './solicitudesEdicionService';
-import type { SolicitudEdicion } from '../../../types';
+import type { SolicitudCrearJugadorEquipo } from './solicitudesEdicionService';
 
 // Funciones para crear solicitudes de JugadorEquipo
 export const solicitarCrearContratoJugadorEquipo = (payload: SolicitudCrearJugadorEquipo['datosPropuestos']) =>
