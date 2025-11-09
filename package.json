@@ -29,6 +29,7 @@
     "eject": "react-scripts eject",
     "lint": "eslint \"src/**/*.{ts,tsx}\""
   },
+  "proxy": "https://overtime-ddyl.onrender.com",
   "eslintConfig": {
     "extends": [
       "react-app",
