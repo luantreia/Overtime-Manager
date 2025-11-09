@@ -11,22 +11,15 @@ import ModalGestionSets from './ModalGestionSets';
 import {
   getPartidoDetallado,
   obtenerSetsDePartido,
-  editarPartido,
   eliminarPartido,
-  recalcularMarcadorPartido,
   actualizarModoVisualizacionPartido,
   actualizarModoEstadisticasPartido,
-  crearSetPartido,
-  actualizarSetPartido,
-  eliminarSetPartido,
   extractEquipoId,
   type PartidoDetallado,
-  type SetPartido,
 } from '../../services/partidoService';
 import type { EstadisticaManualBackend } from '../../hooks/useEstadisticasModal';
 
-import type { Competencia, JugadorPartido } from '../../../../types';
-import { getParticipaciones as getCompetencias } from '../../../competencias/services/equipoCompetenciaService';
+import type { JugadorPartido } from '../../../../types';
 import ConfirmModal from '../../../../shared/components/ConfirmModal/ConfirmModal';
 import { useToast } from '../../../../shared/components/Toast/ToastProvider';
 import { InvalidObjectIdError } from '../../../../utils/validateObjectId';

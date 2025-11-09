@@ -123,7 +123,7 @@ const PlayerProfilePage: React.FC = () => {
     }
   }, [jugador?.administradores, loadAdminUsers]);
 
-  const refreshExtras = async () => {
+  const refreshExtras = useCallback(async () => {
     if (!jugador?.id) return;
     try {
       const eqs = await getEquiposDelJugador(jugador.id);
@@ -131,7 +131,7 @@ const PlayerProfilePage: React.FC = () => {
     } catch (err) {
       // ignore
     }
-  };
+  }, [jugador?.id]);
 
   // solicitar modal state
   const [isSolicitarOpen, setIsSolicitarOpen] = useState(false);
