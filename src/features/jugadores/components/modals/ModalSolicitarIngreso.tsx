@@ -20,6 +20,7 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
   const [fechaInicio, setFechaInicio] = useState<string>('');
   const [fechaFin, setFechaFin] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -34,8 +35,9 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
         // prefer jugador-scoped opciones if we have a jugadorId (more accurate availability)
         const opts = jugadorId ? await obtenerOpcionesEquiposParaJugador(jugadorId, '') : await obtenerOpcionesEquipos('', undefined);
         setOpciones(opts || []);
+        setError(null);
       } catch (err) {
-        // ignore
+        setError('No se pudieron cargar las opciones de equipos');
       }
     })();
 
@@ -60,13 +62,22 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
     try {
       const opts = jugadorId ? await obtenerOpcionesEquiposParaJugador(jugadorId, term) : await obtenerOpcionesEquipos(term, undefined);
       setOpciones(opts || []);
+      setError(null);
     } catch (err) {
-      console.error('Error buscando equipos', err);
       setOpciones([]);
+      setError('No autorizado o error buscando equipos');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handle = setTimeout(() => {
+      void buscar(query.trim());
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [query, isOpen]);
 
   const handleSubmit = async () => {
     if (!selectedEquipo) return;
@@ -114,6 +125,9 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
                 <option key={o.id} value={o.id}>{o.nombre}</option>
               ))}
             </select>
+            {loading && <div className="mt-1 text-xs text-slate-500">Buscando…</div>}
+            {!loading && opciones.length === 0 && !error && <div className="mt-1 text-xs text-slate-500">No hay resultados</div>}
+            {error && <div className="mt-1 text-xs text-red-600">{error}</div>}
           </div>
         </div>
 

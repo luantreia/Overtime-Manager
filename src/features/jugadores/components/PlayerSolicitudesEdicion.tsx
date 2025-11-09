@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { obtenerSolicitudesEdicion, actualizarSolicitudEdicion, cancelarSolicitudEdicion } from '../services/solicitudesEdicionService';
 import { getEquipo } from '../../equipo/services/equipoService';
-import type { SolicitudEdicion, Equipo } from '../../../types';
+import { getUsuarioById, getAdminsEquipo } from '../../auth/services/usersService';
+import type { SolicitudEdicion, Equipo, Usuario } from '../../../types';
 import { useAuth } from '../../../app/providers/AuthContext';
 
 // Interfaces específicas para los datos de las solicitudes
@@ -21,12 +22,15 @@ type DatosSolicitud = DatosCrearJugadorEquipo | DatosEliminarJugadorEquipo;
 
 interface Props {
   jugadorId: string;
+  administradores?: string[];
 }
 
-const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId }) => {
+const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores = [] }) => {
   const [solicitudes, setSolicitudes] = useState<SolicitudEdicion[]>([]);
   const [loading, setLoading] = useState(false);
   const [nombresEquipos, setNombresEquipos] = useState<Map<string, string>>(new Map());
+  const [usuariosCreadores, setUsuariosCreadores] = useState<Map<string, Usuario>>(new Map());
+  const [adminsEquipos, setAdminsEquipos] = useState<Map<string, string[]>>(new Map());
   const { user } = useAuth();
 
   useEffect(() => {
@@ -48,6 +52,41 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId }) => {
     }
 
     setNombresEquipos(nuevosNombres);
+  };
+
+  const cargarUsuariosCreadores = async (creadorIds: string[]) => {
+    const nuevosUsuarios = new Map(usuariosCreadores);
+    const idsFaltantes = creadorIds.filter(id => !nuevosUsuarios.has(id) && id !== user?.id); // no cargar el usuario actual
+
+    for (const creadorId of idsFaltantes) {
+      try {
+        const usuario = await getUsuarioById(creadorId);
+        nuevosUsuarios.set(creadorId, usuario);
+      } catch (error) {
+        console.error(`Error cargando usuario ${creadorId}:`, error);
+        // No fallback, ya que no queremos mostrar IDs
+      }
+    }
+
+    setUsuariosCreadores(nuevosUsuarios);
+  };
+
+  const cargarAdminsEquipos = async (equipoIds: string[]) => {
+    const nuevosAdmins = new Map(adminsEquipos);
+    const idsFaltantes = equipoIds.filter(id => !nuevosAdmins.has(id));
+
+    for (const equipoId of idsFaltantes) {
+      try {
+        const admins = await getAdminsEquipo(equipoId);
+        const adminIds = admins.map((a: any) => typeof a === 'string' ? a : a.id);
+        nuevosAdmins.set(equipoId, adminIds);
+      } catch (error) {
+        console.error(`Error cargando admins equipo ${equipoId}:`, error);
+        nuevosAdmins.set(equipoId, []); // fallback
+      }
+    }
+
+    setAdminsEquipos(nuevosAdmins);
   };
 
   const cargarSolicitudes = async () => {
@@ -83,6 +122,16 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId }) => {
 
       if (equipoIds.length > 0) {
         await cargarNombresEquipos(equipoIds);
+        await cargarAdminsEquipos(equipoIds);
+      }
+
+      // Cargar usuarios creadores
+      const creadorIds = relacionadas
+        .filter(s => s.creadoPor !== user?.id)
+        .map(s => s.creadoPor);
+
+      if (creadorIds.length > 0) {
+        await cargarUsuariosCreadores(creadorIds);
       }
     } catch (error) {
       console.error('Error cargando solicitudes:', error);
@@ -141,19 +190,37 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId }) => {
   // Función para determinar qué acciones puede hacer el usuario con esta solicitud
   const getAccionesDisponibles = (solicitud: SolicitudEdicion) => {
     const esSolicitante = solicitud.creadoPor === user?.id;
-    const esAdmin = user?.rol === 'admin';
+    const esAdminGlobal = user?.rol === 'admin';
+    const esAdminJugadorActual = administradores.includes(user?.id || '');
 
     // Si el usuario creó la solicitud, solo puede cancelarla
     if (esSolicitante) {
       return { puedeCancelar: true, puedeAprobar: false, puedeRechazar: false };
     }
 
-    // Si es admin y la solicitud afecta a este jugador, puede aprobar/rechazar
-    if (esAdmin) {
-      // Verificar si la solicitud afecta al jugador actual
-      if (solicitud.tipo === 'jugador-equipo-crear') {
-        const datos = solicitud.datosPropuestos as unknown as DatosCrearJugadorEquipo;
-        return datos.jugadorId === jugadorId ? { puedeCancelar: false, puedeAprobar: true, puedeRechazar: true } : { puedeCancelar: false, puedeAprobar: false, puedeRechazar: false };
+    // Para solicitudes de jugador-equipo-crear
+    if (solicitud.tipo === 'jugador-equipo-crear') {
+      const datos = solicitud.datosPropuestos as unknown as DatosCrearJugadorEquipo;
+      const adminsEquipo = adminsEquipos.get(datos.equipoId) || [];
+      const esAdminEquipoActual = adminsEquipo.includes(user?.id || '');
+
+      // Determinar de qué lado se creó la solicitud
+      const creadorEsAdminEquipo = adminsEquipo.includes(solicitud.creadoPor);
+      const creadorEsAdminJugador = administradores.includes(solicitud.creadoPor);
+
+      // Admin global siempre puede aprobar/rechazar
+      if (esAdminGlobal) {
+        return { puedeCancelar: false, puedeAprobar: true, puedeRechazar: true };
+      }
+
+      // Si la solicitud la creó un admin del equipo, debe aprobar un admin del jugador
+      if (creadorEsAdminEquipo && esAdminJugadorActual) {
+        return { puedeCancelar: false, puedeAprobar: true, puedeRechazar: true };
+      }
+
+      // Si la solicitud la creó un admin del jugador, debe aprobar un admin del equipo
+      if (creadorEsAdminJugador && esAdminEquipoActual) {
+        return { puedeCancelar: false, puedeAprobar: true, puedeRechazar: true };
       }
     }
 
@@ -183,14 +250,16 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId }) => {
                   <div className="font-medium text-slate-900">{getTipoLabel(solicitud.tipo)}</div>
                   <div className="text-xs text-slate-500 mt-1">
                     {(() => {
-                      const creadorInfo = esSolicitante ? 'Enviada por ti' : `ID creador: ${solicitud.creadoPor}`;
-                      console.log('Debug solicitud:', {
-                        solicitudId: solicitud.id,
-                        creadoPor: solicitud.creadoPor,
-                        userId: user?.id,
-                        esSolicitante,
-                        creadorInfo
-                      });
+                      const creadorInfo = (() => {
+                        if (esSolicitante) {
+                          return 'Enviada por ti';
+                        }
+                        const userCreador = usuariosCreadores.get(solicitud.creadoPor);
+                        if (userCreador) {
+                          return `${userCreador.nombre} (${userCreador.email})`;
+                        }
+                        return `Usuario ${solicitud.creadoPor.slice(-6)}`; // fallback con últimos 6 chars
+                      })();
                       return creadorInfo;
                     })()} | {solicitud.createdAt ? new Date(solicitud.createdAt).toLocaleString() : 'Fecha no disponible'}
                   </div>
@@ -220,32 +289,35 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId }) => {
                   </span>
                   {(acciones.puedeCancelar || acciones.puedeAprobar || acciones.puedeRechazar) && (
                     <div className="flex gap-1">
-                      {acciones.puedeCancelar && (
+                      {acciones.puedeCancelar && !acciones.puedeAprobar && !acciones.puedeRechazar ? (
                         <button
                           onClick={() => handleCancelar(solicitud.id)}
-                          className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600"
+                          className="text-xs bg-slate-500 text-white px-2 py-1 rounded hover:bg-slate-600"
                           title="Cancelar solicitud"
                         >
-                          ✗
+                          Cancelar
                         </button>
-                      )}
-                      {acciones.puedeAprobar && (
-                        <button
-                          onClick={() => handleAprobar(solicitud.id)}
-                          className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
-                          title="Aprobar solicitud"
-                        >
-                          ✓
-                        </button>
-                      )}
-                      {acciones.puedeRechazar && (
-                        <button
-                          onClick={() => handleRechazar(solicitud.id)}
-                          className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-                          title="Rechazar solicitud"
-                        >
-                          ✗
-                        </button>
+                      ) : (
+                        <>
+                          {acciones.puedeAprobar && (
+                            <button
+                              onClick={() => handleAprobar(solicitud.id)}
+                              className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+                              title="Aprobar solicitud"
+                            >
+                              ✓
+                            </button>
+                          )}
+                          {acciones.puedeRechazar && (
+                            <button
+                              onClick={() => handleRechazar(solicitud.id)}
+                              className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                              title="Rechazar solicitud"
+                            >
+                              ✗
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

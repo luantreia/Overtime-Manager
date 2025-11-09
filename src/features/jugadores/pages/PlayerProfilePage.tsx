@@ -3,15 +3,18 @@ import { useParams } from 'react-router-dom';
 import PlayerDetails from '../components/PlayerDetails';
 import PlayerTeams from '../components/PlayerTeams';
 import ModalSolicitarIngreso from '../components/modals/ModalSolicitarIngreso';
+import SeccionAdministradoresJugador from '../components/SeccionAdministradoresJugador';
 import PlayerSolicitudesEdicion from '../components/PlayerSolicitudesEdicion';
 import PlayerStats from '../components/PlayerStats';
 import { getJugadorById, updateJugador } from '../services/jugadorService';
 import { getEquiposDelJugador } from '../services/jugadorEquipoService';
 import { solicitarCrearContratoJugadorEquipo } from '../services/solicitudesJugadorEquipoService';
 import { getResumenEstadisticasJugador } from '../../estadisticas/services/estadisticasService';
-import type { Jugador } from '../../../types';
+import { getUsuarioById, agregarAdminJugador, quitarAdminJugador, getAdminsJugador } from '../../auth/services/usersService';
+import type { Jugador, Usuario } from '../../../types';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 import { useJugador } from '../../../app/providers/JugadorContext';
+import { useAuth } from '../../../app/providers/AuthContext';
 
 const PlayerProfilePage: React.FC = () => {
   const { playerId } = useParams();
@@ -20,8 +23,12 @@ const PlayerProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [equipos, setEquipos] = useState([] as any[]);
   const [estadisticas, setEstadisticas] = useState<any[]>([]);
+  const [adminUsers, setAdminUsers] = useState<Map<string, Usuario>>(new Map());
+  const [nuevoAdmin, setNuevoAdmin] = useState('');
+  const [loadingAgregar, setLoadingAgregar] = useState(false);
 
   const { jugadorSeleccionado } = useJugador();
+  const { user } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +99,30 @@ const PlayerProfilePage: React.FC = () => {
     };
   }, [jugador]);
 
+  useEffect(() => {
+    if (jugador?.administradores && jugador.administradores.length > 0) {
+      loadAdminUsers();
+    } else {
+      setAdminUsers(new Map());
+    }
+  }, [jugador?.administradores]);
+
+  const loadAdminUsers = async () => {
+    if (!jugador?.administradores) return;
+    const adminPromises = jugador.administradores.map(async (id) => {
+      const item = adminUsers.get(id);
+      if (item) return item;
+      // Fetch if not cached
+      return await getUsuarioById(id).catch(() => ({ id, nombre: id, email: 'Usuario no encontrado' } as Usuario));
+    });
+    const users = await Promise.all(adminPromises);
+    const newMap = new Map<string, Usuario>();
+    users.forEach((user) => {
+      newMap.set(user.id, user);
+    });
+    setAdminUsers(newMap);
+  };
+
   const refreshExtras = async () => {
     if (!jugador?.id) return;
     try {
@@ -138,6 +169,83 @@ const PlayerProfilePage: React.FC = () => {
     }
   };
 
+  const handleSaveAdmins = async (administradores: string[]) => {
+    if (!jugador) return;
+    try {
+      const updated = await updateJugador(jugador.id, { administradores });
+      setJugador(updated);
+      addToast({ type: 'success', title: 'Guardado', message: 'Administradores actualizados' });
+    } catch (err) {
+      console.error(err);
+      addToast({ type: 'error', title: 'Error', message: 'No se pudieron actualizar los administradores' });
+      throw err;
+    }
+  };
+
+  const handleNuevoAdminChange = (value: string) => {
+    setNuevoAdmin(value);
+  };
+
+  const handleAgregarAdmin = async () => {
+    const email = nuevoAdmin.trim();
+    if (!email || !jugador) return;
+
+    try {
+      setLoadingAgregar(true);
+      await agregarAdminJugador(jugador.id, email);
+      // Recargar administradores
+      const adminsActualizados = await getAdminsJugador(jugador.id);
+      const adminIds = adminsActualizados.map((a: any) => typeof a === 'string' ? a : a.id);
+      setJugador({ ...jugador, administradores: adminIds });
+      // Poblar usuarios (si no poblados, fetch)
+      const userPromises = adminsActualizados.map(async (a: any) => {
+        if (typeof a === 'object' && a.id) return a as Usuario;
+        // Fetch
+        return await getUsuarioById(a).catch(() => ({ id: a, nombre: a, email: 'Usuario no encontrado' } as Usuario));
+      });
+      const users = await Promise.all(userPromises);
+      const adminUsersMap = new Map<string, Usuario>();
+      users.forEach((user: Usuario) => {
+        adminUsersMap.set(user.id, user);
+      });
+      setAdminUsers(adminUsersMap);
+      addToast({ type: 'success', title: 'Agregado', message: 'Administrador agregado' });
+      setNuevoAdmin('');
+    } catch (error: any) {
+      console.error('Error agregando admin:', error);
+      addToast({ type: 'error', title: 'Error', message: error?.message || 'No se pudo agregar el administrador' });
+    } finally {
+      setLoadingAgregar(false);
+    }
+  };
+
+  const handleQuitarAdmin = async (id: string) => {
+    if (!jugador) return;
+    try {
+      await quitarAdminJugador(jugador.id, id);
+      // Recargar administradores
+      const adminsActualizados = await getAdminsJugador(jugador.id);
+      const adminIds = adminsActualizados.map((a: any) => typeof a === 'string' ? a : a.id);
+      setJugador({ ...jugador, administradores: adminIds });
+      // Poblar usuarios (si no poblados, fetch)
+      const userPromises = adminsActualizados.map(async (a: any) => {
+        if (typeof a === 'object' && a.id) return a as Usuario;
+        // Fetch
+        return await getUsuarioById(a).catch(() => ({ id: a, nombre: a, email: 'Usuario no encontrado' } as Usuario));
+      });
+      const users = await Promise.all(userPromises);
+      const adminUsersMap = new Map<string, Usuario>();
+      users.forEach((user: Usuario) => {
+        adminUsersMap.set(user.id, user);
+      });
+      setAdminUsers(adminUsersMap);
+      addToast({ type: 'success', title: 'Quitado', message: 'Administrador removido' });
+    } catch (error: any) {
+      console.error('Error quitando admin:', error);
+      addToast({ type: 'error', title: 'Error', message: error?.message || 'No se pudo quitar el administrador' });
+    }
+  };
+
   if (loading && !jugador) {
     return <div className="text-sm text-slate-500">Cargando jugador…</div>;
   }
@@ -163,7 +271,22 @@ const PlayerProfilePage: React.FC = () => {
 
         <div className="lg:col-span-2 space-y-6">
           <PlayerTeams jugador={jugador} equipos={equipos} onSolicitar={(id) => openSolicitarModal(id)} />
-          <PlayerSolicitudesEdicion jugadorId={jugador.id} />
+          <PlayerSolicitudesEdicion jugadorId={jugador.id} administradores={jugador.administradores} />
+          {(user?.rol === 'admin' || user?.id === jugador.creadoPor) && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <SeccionAdministradoresJugador
+                admins={jugador.administradores?.map(id => {
+                  const user = adminUsers.get(id);
+                  return { id, nombre: user?.nombre, email: user?.email };
+                }) || []}
+                nuevoAdmin={nuevoAdmin}
+                onNuevoAdminChange={handleNuevoAdminChange}
+                onAgregarAdmin={handleAgregarAdmin}
+                onQuitarAdmin={handleQuitarAdmin}
+                loadingAgregar={loadingAgregar}
+              />
+            </div>
+          )}
         </div>
       </div>
       <ModalSolicitarIngreso
