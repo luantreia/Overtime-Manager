@@ -99,14 +99,6 @@ const PlayerProfilePage: React.FC = () => {
     };
   }, [jugador]);
 
-  useEffect(() => {
-    if (jugador?.administradores && jugador.administradores.length > 0) {
-      loadAdminUsers();
-    } else {
-      setAdminUsers(new Map());
-    }
-  }, [jugador?.administradores, loadAdminUsers]);
-
   const loadAdminUsers = useCallback(async () => {
     if (!jugador?.administradores) return;
     const adminPromises = jugador.administradores.map(async (id) => {
@@ -122,6 +114,14 @@ const PlayerProfilePage: React.FC = () => {
     });
     setAdminUsers(newMap);
   }, [jugador?.administradores, adminUsers]);
+
+  useEffect(() => {
+    if (jugador?.administradores && jugador.administradores.length > 0) {
+      loadAdminUsers();
+    } else {
+      setAdminUsers(new Map());
+    }
+  }, [jugador?.administradores, loadAdminUsers]);
 
   const refreshExtras = async () => {
     if (!jugador?.id) return;
