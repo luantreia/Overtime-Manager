@@ -4,6 +4,8 @@ import { getEquipo } from '../../equipo/services/equipoService';
 import { getUsuarioById, getAdminsEquipo } from '../../auth/services/usersService';
 import type { SolicitudEdicion, Equipo, Usuario } from '../../../types';
 import { useAuth } from '../../../app/providers/AuthContext';
+import { getRelacionesPorJugadorRaw } from '../services/jugadorEquipoService';
+import { useToast } from '../../../shared/components/Toast/ToastProvider';
 
 // Interfaces específicas para los datos de las solicitudes
 interface DatosCrearJugadorEquipo {
@@ -32,6 +34,8 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
   const [usuariosCreadores, setUsuariosCreadores] = useState<Map<string, Usuario>>(new Map());
   const [adminsEquipos, setAdminsEquipos] = useState<Map<string, string[]>>(new Map());
   const { user } = useAuth();
+  const { addToast } = useToast();
+  const [contratoToEquipo, setContratoToEquipo] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     cargarSolicitudes();
@@ -95,6 +99,19 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
       // Cargar todas las solicitudes pendientes
       const todasPendientes = await obtenerSolicitudesEdicion({ estado: 'pendiente' });
 
+      // Obtener relaciones para este jugador para resolver contrato -> equipo
+      const relaciones = await getRelacionesPorJugadorRaw(jugadorId);
+      const mapaContratoAEquipo = new Map<string, string>();
+      for (const r of relaciones) {
+        const contratoId = r._id;
+        const rawEquipo = (r as any).equipo;
+        const equipoId = typeof rawEquipo === 'string' ? rawEquipo : rawEquipo?._id;
+        if (contratoId && equipoId) {
+          mapaContratoAEquipo.set(contratoId, equipoId);
+        }
+      }
+      setContratoToEquipo(mapaContratoAEquipo);
+
       // Filtrar las que están relacionadas con este jugador
       const relacionadas = todasPendientes.filter(solicitud => {
         // Mostrar solicitudes creadas por este usuario (puede cancelar)
@@ -108,8 +125,12 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
           return datos.jugadorId === jugadorId;
         }
 
-        // Para solicitudes de eliminación, por ahora no las mostramos
-        // (requeriría verificar si el contrato pertenece al jugador)
+        if (solicitud.tipo === 'jugador-equipo-eliminar') {
+          const datos = solicitud.datosPropuestos as unknown as DatosEliminarJugadorEquipo;
+          // pertenece si el contrato corresponde a alguna relación del jugador
+          return !!mapaContratoAEquipo.get(datos.contratoId);
+        }
+
         return false;
       });
 
@@ -117,8 +138,17 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
 
       // Cargar nombres de equipos necesarios
       const equipoIds = relacionadas
-        .filter(s => s.tipo === 'jugador-equipo-crear')
-        .map(s => (s.datosPropuestos as unknown as DatosCrearJugadorEquipo).equipoId);
+        .map(s => {
+          if (s.tipo === 'jugador-equipo-crear') {
+            return (s.datosPropuestos as unknown as DatosCrearJugadorEquipo).equipoId;
+          }
+          if (s.tipo === 'jugador-equipo-eliminar') {
+            const contratoId = (s.datosPropuestos as unknown as DatosEliminarJugadorEquipo).contratoId;
+            return mapaContratoAEquipo.get(contratoId);
+          }
+          return undefined;
+        })
+        .filter((x): x is string => Boolean(x));
 
       if (equipoIds.length > 0) {
         await cargarNombresEquipos(equipoIds);
@@ -160,30 +190,36 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
   const handleCancelar = async (solicitudId: string) => {
     try {
       await cancelarSolicitudEdicion(solicitudId);
+      addToast({ type: 'success', title: 'Solicitud cancelada', message: 'La solicitud fue cancelada.' });
       // Recargar solicitudes
       await cargarSolicitudes();
     } catch (error) {
       console.error('Error cancelando solicitud:', error);
+      addToast({ type: 'error', title: 'Error', message: 'No se pudo cancelar la solicitud.' });
     }
   };
 
   const handleAprobar = async (solicitudId: string) => {
     try {
       await actualizarSolicitudEdicion(solicitudId, { estado: 'aceptado' });
+      addToast({ type: 'success', title: 'Solicitud aprobada', message: 'Se aplicarán los cambios correspondientes.' });
       // Recargar solicitudes
       await cargarSolicitudes();
     } catch (error) {
       console.error('Error aprobando solicitud:', error);
+      addToast({ type: 'error', title: 'Error', message: 'No se pudo aprobar la solicitud.' });
     }
   };
 
   const handleRechazar = async (solicitudId: string, motivo: string = 'Rechazada') => {
     try {
       await actualizarSolicitudEdicion(solicitudId, { estado: 'rechazado', motivoRechazo: motivo });
+      addToast({ type: 'success', title: 'Solicitud rechazada', message: 'La solicitud fue rechazada.' });
       // Recargar solicitudes
       await cargarSolicitudes();
     } catch (error) {
       console.error('Error rechazando solicitud:', error);
+      addToast({ type: 'error', title: 'Error', message: 'No se pudo rechazar la solicitud.' });
     }
   };
 
@@ -220,6 +256,18 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
 
       // Si la solicitud la creó un admin del jugador, debe aprobar un admin del equipo
       if (creadorEsAdminJugador && esAdminEquipoActual) {
+        return { puedeCancelar: false, puedeAprobar: true, puedeRechazar: true };
+      }
+    }
+
+    // Para solicitudes de jugador-equipo-eliminar: cualquiera de los admin (jugador o equipo) o admin global
+    if (solicitud.tipo === 'jugador-equipo-eliminar') {
+      const datos = solicitud.datosPropuestos as unknown as DatosEliminarJugadorEquipo;
+      const equipoId = contratoToEquipo.get(datos.contratoId);
+      const adminsEquipo = equipoId ? (adminsEquipos.get(equipoId) || []) : [];
+      const esAdminEquipoActual = adminsEquipo.includes(user?.id || '');
+
+      if (esAdminGlobal || esAdminEquipoActual || esAdminJugadorActual) {
         return { puedeCancelar: false, puedeAprobar: true, puedeRechazar: true };
       }
     }
@@ -278,7 +326,14 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
                       })()}
                       {solicitud.tipo === 'jugador-equipo-eliminar' && (() => {
                         const datos = solicitud.datosPropuestos as unknown as DatosEliminarJugadorEquipo;
-                        return <>Contrato: {datos.contratoId}</>;
+                        const equipoId = contratoToEquipo.get(datos.contratoId);
+                        const nombreEquipo = equipoId ? (nombresEquipos.get(equipoId) || `Equipo ${equipoId.slice(-6)}`) : 'Equipo desconocido';
+                        return (
+                          <>
+                            Equipo: {nombreEquipo}<br/>
+                            Contrato: {datos.contratoId}
+                          </>
+                        );
                       })()}
                     </div>
                   )}

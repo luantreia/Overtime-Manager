@@ -254,3 +254,7 @@ export const getEquiposDelJugador = async (jugadorId: string): Promise<Equipo[]>
 
   return equipos;
 };
+
+export const getRelacionesPorJugadorRaw = async (jugadorId: string) => {
+  return authFetch<BackendJugadorEquipo[]>(`/jugador-equipo?jugador=${jugadorId}`);
+};
