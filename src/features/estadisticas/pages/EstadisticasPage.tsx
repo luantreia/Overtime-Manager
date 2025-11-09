@@ -4,18 +4,10 @@ import { getResumenEstadisticasJugador } from '../services/estadisticasService';
 import EstadisticaCard from '../../../shared/components/EstadisticaCard';
 import { formatDate } from '../../../utils/formatDate';
 import { formatNumber } from '../../../utils/formatNumber';
-import type { EstadisticaJugador } from '../../../types';
 import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
-import { SeccionTop5estadisticasDirectas } from '../components/sections/SeccionTop5estadisticasDirectas';
 
 
-
-const RESULTADO_STYLES: Record<'W' | 'D' | 'L', string> = {
-  W: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  D: 'bg-amber-100 text-amber-700 border border-amber-200',
-  L: 'bg-rose-100 text-rose-700 border border-rose-200',
-};
 
 const RESULTADO_LABELS: Record<'W' | 'D' | 'L', string> = {
   W: 'Victoria',
@@ -74,7 +66,7 @@ const EstadisticasPage = () => {
     return () => {
       isCancelled = true;
     };
-  }, [jugadorSeleccionado?.id]);
+  }, [jugadorSeleccionado?.id, addToast]);
 
   const cards = useMemo(() => {
     if (!resumen) return [];
@@ -103,41 +95,7 @@ const EstadisticasPage = () => {
     ];
   }, [resumen]);
 
-  const quickStats = useMemo(() => {
-    const victorias = historial.filter((item) => item.resultado === 'W').length;
-    const empates = historial.filter((item) => item.resultado === 'D').length;
-    const derrotas = historial.filter((item) => item.resultado === 'L').length;
-
-    const totalAnotados = historial.reduce((total, item) => total + item.puntosAnotados, 0);
-    const totalRecibidos = historial.reduce((total, item) => total + item.puntosRecibidos, 0);
-    const promedioAnotados = historial.length ? totalAnotados / historial.length : null;
-    const promedioRecibidos = historial.length ? totalRecibidos / historial.length : null;
-
-    const stats: Array<{ label: string; value: string }> = [
-      { label: 'Partidos registrados', value: historial.length.toString() },
-      { label: 'Balance reciente', value: `${victorias}-${empates}-${derrotas}` },
-    ];
-
-    stats.push({
-      label: 'Puntos promedio a favor',
-      value: promedioAnotados !== null ? formatNumber(promedioAnotados) : '—',
-    });
-
-    stats.push({
-      label: 'Puntos promedio en contra',
-      value: promedioRecibidos !== null ? formatNumber(promedioRecibidos) : '—',
-    });
-
-    if (resumen) {
-      stats.push({ label: 'Efectividad global', value: `${formatNumber(resumen.efectividadEquipo)}%` });
-      stats.push({ label: 'Posición actual', value: resumen.posicionActual ? `#${resumen.posicionActual}` : '—' });
-    }
-
-    return stats;
-  }, [historial, resumen]);
-
-  const historialReciente = useMemo(() => historial.slice(0, 5), [historial]);
-  const racha = resumen?.racha ?? [];
+  // Removed unused derived values to satisfy lint
 
   if (!jugadorSeleccionado) {
     return (

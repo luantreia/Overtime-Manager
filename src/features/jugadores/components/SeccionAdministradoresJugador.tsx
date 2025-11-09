@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button } from '../../../shared/components/ui';
-import type { Usuario } from '../../../types';
 
 interface AdminItem {
   id: string;

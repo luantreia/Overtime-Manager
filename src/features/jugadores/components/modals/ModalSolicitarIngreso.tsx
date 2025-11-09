@@ -55,7 +55,7 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
         }
       })();
     }
-  }, [isOpen, initialEquipoId]);
+  }, [isOpen, initialEquipoId, jugadorId]);
 
   const buscar = async (term: string) => {
     setLoading(true);
@@ -77,7 +77,7 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
       void buscar(query.trim());
     }, 400);
     return () => clearTimeout(handle);
-  }, [query, isOpen]);
+  }, [query, isOpen, buscar]);
 
   const handleSubmit = async () => {
     if (!selectedEquipo) return;

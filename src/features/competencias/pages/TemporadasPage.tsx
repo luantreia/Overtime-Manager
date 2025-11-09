@@ -26,7 +26,6 @@ const TemporadasPage = () => {
         if (isCancelled) return;
 
         // Ordenar temporadas: activas primero, luego terminadas por fecha más reciente
-        const ahora = new Date();
         const temporadasOrdenadas = temporadasDelJugador.sort((a, b) => {
           const fechaFinA = a.fechaFin ? new Date(a.fechaFin) : null;
           const fechaFinB = b.fechaFin ? new Date(b.fechaFin) : null;
