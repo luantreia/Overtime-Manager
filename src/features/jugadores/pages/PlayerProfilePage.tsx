@@ -105,9 +105,9 @@ const PlayerProfilePage: React.FC = () => {
     } else {
       setAdminUsers(new Map());
     }
-  }, [jugador?.administradores]);
+  }, [jugador?.administradores, loadAdminUsers]);
 
-  const loadAdminUsers = async () => {
+  const loadAdminUsers = useCallback(async () => {
     if (!jugador?.administradores) return;
     const adminPromises = jugador.administradores.map(async (id) => {
       const item = adminUsers.get(id);
@@ -121,7 +121,7 @@ const PlayerProfilePage: React.FC = () => {
       newMap.set(user.id, user);
     });
     setAdminUsers(newMap);
-  };
+  }, [jugador?.administradores, adminUsers]);
 
   const refreshExtras = async () => {
     if (!jugador?.id) return;
@@ -152,7 +152,7 @@ const PlayerProfilePage: React.FC = () => {
       addToast({ type: 'error', title: 'Error', message: 'No pudimos enviar la solicitud.' });
       throw err;
     }
-  }, [addToast]);
+  }, [addToast, refreshExtras]);
 
   const handleSave = async (payload: Partial<Jugador>) => {
     if (!jugador) return;
@@ -169,18 +169,6 @@ const PlayerProfilePage: React.FC = () => {
     }
   };
 
-  const handleSaveAdmins = async (administradores: string[]) => {
-    if (!jugador) return;
-    try {
-      const updated = await updateJugador(jugador.id, { administradores });
-      setJugador(updated);
-      addToast({ type: 'success', title: 'Guardado', message: 'Administradores actualizados' });
-    } catch (err) {
-      console.error(err);
-      addToast({ type: 'error', title: 'Error', message: 'No se pudieron actualizar los administradores' });
-      throw err;
-    }
-  };
 
   const handleNuevoAdminChange = (value: string) => {
     setNuevoAdmin(value);
