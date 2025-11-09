@@ -37,6 +37,57 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
   const { addToast } = useToast();
   const [contratoToEquipo, setContratoToEquipo] = useState<Map<string, string>>(new Map());
 
+  const cargarNombresEquipos = useCallback(async (equipoIds: string[]) => {
+    const nuevosNombres = new Map(nombresEquipos);
+    const idsFaltantes = equipoIds.filter(id => !nuevosNombres.has(id));
+
+    for (const equipoId of idsFaltantes) {
+      try {
+        const equipo = await getEquipo(equipoId);
+        nuevosNombres.set(equipoId, equipo.nombre);
+      } catch (error) {
+        console.error(`Error cargando equipo ${equipoId}:`, error);
+        nuevosNombres.set(equipoId, `Equipo ${equipoId.slice(-6)}`);
+      }
+    }
+
+    setNombresEquipos(nuevosNombres);
+  }, [nombresEquipos]);
+
+  const cargarUsuariosCreadores = useCallback(async (creadorIds: string[]) => {
+    const nuevosUsuarios = new Map(usuariosCreadores);
+    const idsFaltantes = creadorIds.filter(id => !nuevosUsuarios.has(id) && id !== user?.id);
+
+    for (const creadorId of idsFaltantes) {
+      try {
+        const usuario = await getUsuarioById(creadorId);
+        nuevosUsuarios.set(creadorId, usuario);
+      } catch (error) {
+        console.error(`Error cargando usuario ${creadorId}:`, error);
+      }
+    }
+
+    setUsuariosCreadores(nuevosUsuarios);
+  }, [usuariosCreadores, user?.id]);
+
+  const cargarAdminsEquipos = useCallback(async (equipoIds: string[]) => {
+    const nuevosAdmins = new Map(adminsEquipos);
+    const idsFaltantes = equipoIds.filter(id => !nuevosAdmins.has(id));
+
+    for (const equipoId of idsFaltantes) {
+      try {
+        const admins = await getAdminsEquipo(equipoId);
+        const adminIds = admins.map((a: any) => typeof a === 'string' ? a : a.id);
+        nuevosAdmins.set(equipoId, adminIds);
+      } catch (error) {
+        console.error(`Error cargando admins equipo ${equipoId}:`, error);
+        nuevosAdmins.set(equipoId, []);
+      }
+    }
+
+    setAdminsEquipos(nuevosAdmins);
+  }, [adminsEquipos]);
+
   const cargarSolicitudes = useCallback(async () => {
     try {
       setLoading(true);
@@ -112,63 +163,13 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
     } finally {
       setLoading(false);
     }
-  }, [jugadorId, user?.id]);
+  }, [jugadorId, user?.id, cargarNombresEquipos, cargarUsuariosCreadores, cargarAdminsEquipos]);
 
   useEffect(() => {
     void cargarSolicitudes();
   }, [cargarSolicitudes]);
 
-  const cargarNombresEquipos = async (equipoIds: string[]) => {
-    const nuevosNombres = new Map(nombresEquipos);
-    const idsFaltantes = equipoIds.filter(id => !nuevosNombres.has(id));
-
-    for (const equipoId of idsFaltantes) {
-      try {
-        const equipo = await getEquipo(equipoId);
-        nuevosNombres.set(equipoId, equipo.nombre);
-      } catch (error) {
-        console.error(`Error cargando equipo ${equipoId}:`, error);
-        nuevosNombres.set(equipoId, `Equipo ${equipoId.slice(-6)}`); // fallback
-      }
-    }
-
-    setNombresEquipos(nuevosNombres);
-  };
-
-  const cargarUsuariosCreadores = async (creadorIds: string[]) => {
-    const nuevosUsuarios = new Map(usuariosCreadores);
-    const idsFaltantes = creadorIds.filter(id => !nuevosUsuarios.has(id) && id !== user?.id); // no cargar el usuario actual
-
-    for (const creadorId of idsFaltantes) {
-      try {
-        const usuario = await getUsuarioById(creadorId);
-        nuevosUsuarios.set(creadorId, usuario);
-      } catch (error) {
-        console.error(`Error cargando usuario ${creadorId}:`, error);
-        // No fallback, ya que no queremos mostrar IDs
-      }
-    }
-
-    setUsuariosCreadores(nuevosUsuarios);
-  };
-
-  const cargarAdminsEquipos = async (equipoIds: string[]) => {
-    const nuevosAdmins = new Map(adminsEquipos);
-    const idsFaltantes = equipoIds.filter(id => !nuevosAdmins.has(id));
-
-    for (const equipoId of idsFaltantes) {
-      try {
-        const admins = await getAdminsEquipo(equipoId);
-        const adminIds = admins.map((a: any) => typeof a === 'string' ? a : a.id);
-        nuevosAdmins.set(equipoId, adminIds);
-      } catch (error) {
-        console.error(`Error cargando admins equipo ${equipoId}:`, error);
-        nuevosAdmins.set(equipoId, []); // fallback
-      }
-    }
-
-    setAdminsEquipos(nuevosAdmins);
-  };
+  // moved helpers above and memoized
 
 
   const getEstadoColor = (estado: string) => {

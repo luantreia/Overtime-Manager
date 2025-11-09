@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ModalBase from '../../../../shared/components/ModalBase/ModalBase';
 import { obtenerOpcionesEquipos, getEquipo } from '../../../equipo/services/equipoService';
 import { obtenerOpcionesEquiposParaJugador } from '../../services/jugadorEquipoService';
@@ -57,7 +57,7 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
     }
   }, [isOpen, initialEquipoId, jugadorId]);
 
-  const buscar = async (term: string) => {
+  const buscar = useCallback(async (term: string) => {
     setLoading(true);
     try {
       const opts = jugadorId ? await obtenerOpcionesEquiposParaJugador(jugadorId, term) : await obtenerOpcionesEquipos(term, undefined);
@@ -69,7 +69,7 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
     } finally {
       setLoading(false);
     }
-  };
+  }, [jugadorId]);
 
   useEffect(() => {
     if (!isOpen) return;
