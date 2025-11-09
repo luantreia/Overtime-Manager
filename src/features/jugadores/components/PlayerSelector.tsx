@@ -8,7 +8,7 @@ const PlayerSelector: React.FC = () => {
   const options = [{ value: '', label: 'Seleccionar jugador' }, ...jugadores.map((j) => ({ value: j.id, label: j.nombre }))];
 
   return (
-    <div className="hidden sm:block">
+    <div className="block">
       <Select
         id="player-selector"
         label=""

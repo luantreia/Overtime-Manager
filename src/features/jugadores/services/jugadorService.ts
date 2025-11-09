@@ -41,7 +41,11 @@ export const getCurrentJugador = async (): Promise<Jugador> => {
 };
 
 export const getJugadores = async (): Promise<Jugador[]> => {
-  const backend = await authFetch<any[]>(`/jugadores`);
+  const backend = await authFetch<any[]>(`/jugadores/admin`).catch(async () => {
+    // fallback a todos si el endpoint no existe
+    const all = await authFetch<any[]>(`/jugadores`);
+    return all;
+  });
   return (backend || []).map(mapBackendJugador);
 };
 

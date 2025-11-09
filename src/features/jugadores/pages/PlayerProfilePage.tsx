@@ -101,19 +101,39 @@ const PlayerProfilePage: React.FC = () => {
 
   const loadAdminUsers = useCallback(async () => {
     if (!jugador?.administradores) return;
-    const adminPromises = jugador.administradores.map(async (id) => {
-      const item = adminUsers.get(id);
-      if (item) return item;
-      // Fetch if not cached
-      return await getUsuarioById(id).catch(() => ({ id, nombre: id, email: 'Usuario no encontrado' } as Usuario));
-    });
-    const users = await Promise.all(adminPromises);
-    const newMap = new Map<string, Usuario>();
-    users.forEach((user) => {
-      newMap.set(user.id, user);
-    });
-    setAdminUsers(newMap);
-  }, [jugador?.administradores, adminUsers]);
+    
+    // Get current admin users for the cache
+    const currentAdminUsers = new Map(adminUsers);
+    
+    // Only fetch users that aren't already in the cache
+    const usersToFetch = jugador.administradores.filter(id => !currentAdminUsers.has(id));
+    
+    if (usersToFetch.length === 0) return;
+    
+    try {
+      const fetchedUsers = await Promise.all(
+        usersToFetch.map(id => 
+          getUsuarioById(id)
+            .then(user => ({ user, id }))
+            .catch(() => ({ 
+              user: { id, nombre: id, email: 'Usuario no encontrado' } as Usuario, 
+              id 
+            }))
+        )
+      );
+      
+      // Update the state with new users
+      setAdminUsers(prev => {
+        const newMap = new Map(prev);
+        fetchedUsers.forEach(({ user }) => {
+          newMap.set(user.id, user);
+        });
+        return newMap;
+      });
+    } catch (error) {
+      console.error('Error loading admin users:', error);
+    }
+  }, [jugador?.administradores]); // Removed adminUsers from dependencies
 
   useEffect(() => {
     if (jugador?.administradores && jugador.administradores.length > 0) {
