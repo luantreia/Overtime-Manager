@@ -7,6 +7,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './app/providers/AuthContext';
 import { JugadorProvider } from './app/providers/JugadorContext';
 import { ToastProvider } from './shared/components/Toast/ToastProvider';
+import { SolicitudesProvider } from './app/providers/SolicitudesContext';
 
 const container = document.getElementById('root');
 
@@ -21,7 +22,9 @@ root.render(
       <ToastProvider>
         <AuthProvider>
           <JugadorProvider>
-            <App />
+            <SolicitudesProvider>
+              <App />
+            </SolicitudesProvider>  
           </JugadorProvider>
         </AuthProvider>
       </ToastProvider>
