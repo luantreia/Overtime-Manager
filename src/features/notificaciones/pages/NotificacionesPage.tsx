@@ -1,161 +1,290 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getSolicitudesPorJugador, getHistorialSolicitudesPorJugador } from '../../jugadores/services/jugadorEquipoService';
-import type { SolicitudJugador, ContratoJugadorResumen } from '../../../types';
+import { useSearchParams } from 'react-router-dom';
+import { getSolicitudesEdicion, actualizarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
+import type { ISolicitudEdicion } from '../../../types/solicitudesEdicion';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
+
+const categoriaDeTipo = (tipo: string): string => {
+  if (
+    tipo === 'usuario-solicitar-admin-jugador'
+  ) return 'Solicitudes de usuarios';
+
+  if (
+    tipo === 'jugador-equipo-crear' ||
+    tipo === 'jugador-equipo-eliminar' ||
+    tipo === 'jugador-equipo-editar'
+  ) return 'Contratos';
+
+  if (
+    tipo === 'participacion-temporada-crear' ||
+    tipo === 'participacion-temporada-actualizar' ||
+    tipo === 'participacion-temporada-eliminar' ||
+    tipo === 'jugador-temporada-crear' ||
+    tipo === 'jugador-temporada-actualizar' ||
+    tipo === 'jugador-temporada-eliminar'
+  ) return 'Participaciones';
+
+  if (
+    tipo === 'resultadoPartido' ||
+    tipo === 'resultadoSet' ||
+    tipo === 'estadisticasJugadorSet' ||
+    tipo === 'estadisticasJugadorPartido' ||
+    tipo === 'estadisticasEquipoPartido' ||
+    tipo === 'estadisticasEquipoSet'
+  ) return 'Partidos';
+
+  return 'Otras';
+};
+
+const labelTipo = (t: string) => {
+  const map: Partial<Record<string, string>> = {
+    'usuario-solicitar-admin-jugador': 'Usuario: Solicitar admin de jugador',
+    'jugador-equipo-crear': 'Contrato: Jugador-Equipo (crear)',
+    'jugador-equipo-eliminar': 'Contrato: Jugador-Equipo (eliminar)',
+    'jugador-equipo-editar': 'Contrato: Jugador-Equipo (editar)',
+    'participacion-temporada-crear': 'Participación: Temporada (crear)',
+    'participacion-temporada-actualizar': 'Participación: Temporada (actualizar)',
+    'participacion-temporada-eliminar': 'Participación: Temporada (eliminar)',
+    'jugador-temporada-crear': 'Participación: Jugador-Temporada (crear)',
+    'jugador-temporada-actualizar': 'Participación: Jugador-Temporada (actualizar)',
+    'jugador-temporada-eliminar': 'Participación: Jugador-Temporada (eliminar)',
+    resultadoPartido: 'Partido: Resultado partido',
+    resultadoSet: 'Partido: Resultado set',
+    estadisticasJugadorSet: 'Partido: Estadísticas jugador set',
+    estadisticasJugadorPartido: 'Partido: Estadísticas jugador partido',
+    estadisticasEquipoPartido: 'Partido: Estadísticas equipo partido',
+    estadisticasEquipoSet: 'Partido: Estadísticas equipo set',
+  };
+  return map[t] ?? t;
+};
 
 const NotificacionesPage = () => {
   const { jugadorSeleccionado } = useJugador();
   const { addToast } = useToast();
-  const [pendientes, setPendientes] = useState<SolicitudJugador[]>([]);
-  const [historial, setHistorial] = useState<ContratoJugadorResumen[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [solicitudes, setSolicitudes] = useState<ISolicitudEdicion[]>([]);
+  const [accionando, setAccionando] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [rechazoEdit, setRechazoEdit] = useState<{ id: string; motivo: string } | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+
+  const [fEstado, setFEstado] = useState<string>((searchParams.get('estado') as any) || 'pendiente');
+  const [fCategoria, setFCategoria] = useState<string>(searchParams.get('categoria') || 'Todas');
+  const [q, setQ] = useState<string>(searchParams.get('q') || '');
+
+  const cargar = async () => {
+    if (!jugadorSeleccionado) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const params: any = {};
+      if (fEstado && fEstado !== 'todos') params.estado = fEstado;
+      const data = await getSolicitudesEdicion(params);
+      setSolicitudes(data.solicitudes || []);
+    } catch (e: any) {
+      setError(e?.message || 'Error al cargar solicitudes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void cargar(); }, [fEstado, jugadorSeleccionado?.id]);
 
   useEffect(() => {
-    const jugadorId = jugadorSeleccionado?.id;
-    if (!jugadorId) {
-      setPendientes([]);
-      setHistorial([]);
+    if (!autoRefresh || !jugadorSeleccionado) return;
+    const id = window.setInterval(() => { void cargar(); }, 30000);
+    return () => window.clearInterval(id);
+  }, [autoRefresh, fEstado, jugadorSeleccionado?.id]);
+
+  useEffect(() => {
+    const sp = new URLSearchParams();
+    if (fEstado && fEstado !== 'todos') sp.set('estado', fEstado);
+    if (fCategoria && fCategoria !== 'Todas') sp.set('categoria', fCategoria);
+    if (q) sp.set('q', q);
+    setSearchParams(sp, { replace: true });
+  }, [fEstado, fCategoria, q, setSearchParams]);
+
+  const perteneceAlJugador = (s: ISolicitudEdicion, jugadorId: string) => {
+    try {
+      if ((s as any).entidad === jugadorId) return true;
+      const dp = (s as any).datosPropuestos || {};
+      return dp.jugadorId === jugadorId || dp.jugador === jugadorId || JSON.stringify(dp).includes(jugadorId);
+    } catch {
+      return false;
+    }
+  };
+
+  const filtradas = useMemo(() => {
+    if (!jugadorSeleccionado) return [] as ISolicitudEdicion[];
+    const byJugador = (s: ISolicitudEdicion) => perteneceAlJugador(s, jugadorSeleccionado.id);
+    const byCat = (s: ISolicitudEdicion) => (fCategoria === 'Todas' ? true : categoriaDeTipo((s as any).tipo) === fCategoria);
+    const byQ = (s: ISolicitudEdicion) => {
+      if (!q) return true;
+      const txt = `${(s as any).tipo} ${labelTipo((s as any).tipo)} ${JSON.stringify((s as any).datosPropuestos || {})}`.toLowerCase();
+      return txt.includes(q.toLowerCase());
+    };
+    return (solicitudes || []).filter((s) => byJugador(s) && byCat(s) && byQ(s));
+  }, [solicitudes, jugadorSeleccionado?.id, fCategoria, q]);
+
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filtradas.length / pageSize));
+  useEffect(() => { setPage(1); }, [fCategoria, q, fEstado, jugadorSeleccionado?.id]);
+
+  const manejarAprobar = async (s: ISolicitudEdicion) => {
+    try {
+      setAccionando((s as any)._id);
+      const updated = await actualizarSolicitudEdicion((s as any)._id, { estado: 'aceptado' } as any);
+      setSolicitudes((prev) => prev.map((x) => ((x as any)._id === (s as any)._id ? updated : x)) as any);
+      addToast({ type: 'success', title: 'Solicitud aprobada' });
+    } catch (e: any) {
+      addToast({ type: 'error', title: 'Error al aprobar', message: e?.message || 'No se pudo aprobar' });
+    } finally {
+      setAccionando(null);
+    }
+  };
+
+  const manejarRechazar = async (s: ISolicitudEdicion) => {
+    if (!rechazoEdit || rechazoEdit.id !== (s as any)._id || !rechazoEdit.motivo.trim()) {
+      addToast({ type: 'info', title: 'Ingresá un motivo', message: 'Escribí un motivo y confirmá' });
       return;
     }
-
-    let cancelado = false;
-
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [solPendientes, historico] = await Promise.all([
-          // obtener solicitudes y historial para el jugador seleccionado
-          getSolicitudesPorJugador(jugadorId),
-          getHistorialSolicitudesPorJugador(jugadorId),
-        ]);
-        if (cancelado) return;
-        setPendientes(solPendientes);
-        setHistorial(historico);
-      } catch (err) {
-        console.error(err);
-        if (!cancelado) {
-          addToast({ type: 'error', title: 'Error', message: 'No pudimos cargar las solicitudes del jugador.' });
-        }
-      } finally {
-        if (!cancelado) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void fetchData();
-
-    return () => {
-      cancelado = true;
-    };
-  }, [jugadorSeleccionado?.id, addToast]);
-
-  const historialAgrupado = useMemo(() => {
-    if (historial.length === 0) return [] as ContratoJugadorResumen[];
-    return historial.filter((item) => item.estado !== 'pendiente');
-  }, [historial]);
+    try {
+      setAccionando((s as any)._id);
+      const updated = await actualizarSolicitudEdicion((s as any)._id, { estado: 'rechazado', motivoRechazo: rechazoEdit.motivo.trim() } as any);
+      setSolicitudes((prev) => prev.map((x) => ((x as any)._id === (s as any)._id ? updated : x)) as any);
+      setRechazoEdit(null);
+      addToast({ type: 'success', title: 'Solicitud rechazada' });
+    } catch (e: any) {
+      addToast({ type: 'error', title: 'Error al rechazar', message: e?.message || 'No se pudo rechazar' });
+    } finally {
+      setAccionando(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Notificaciones</h1>
-        <p className="text-sm text-slate-500">
-          Revisá solicitudes, avisos de partidos y cambios importantes.
-        </p>
+      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Notificaciones</h1>
+          <p className="text-sm text-slate-500">Gestioná solicitudes del jugador por categoría.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={fEstado} onChange={(e) => setFEstado(e.target.value)} className="rounded-lg border-slate-300 text-sm">
+            <option value="todos">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="aceptado">Aceptado</option>
+            <option value="rechazado">Rechazado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+          <select value={fCategoria} onChange={(e) => setFCategoria(e.target.value)} className="rounded-lg border-slate-300 text-sm">
+            <option>Todas</option>
+            <option>Solicitudes de usuarios</option>
+            <option>Contratos</option>
+            <option>Participaciones</option>
+            <option>Partidos</option>
+            <option>Otras</option>
+          </select>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" className="w-48 rounded-lg border-slate-300 text-sm" />
+          <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />
+            Auto-refresh 30s
+          </label>
+          <button onClick={() => void cargar()} className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Recargar</button>
+        </div>
       </header>
 
-      {loading ? <p className="text-sm text-slate-500">Cargando solicitudes…</p> : null}
-
       {!jugadorSeleccionado ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-          Seleccioná un jugador para ver sus notificaciones.
-        </p>
+        <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">Seleccioná un jugador para ver sus notificaciones.</p>
+      ) : loading ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Cargando…</div>
+      ) : error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
       ) : (
-        <div className="space-y-8">
-          <section>
-            <header className="mb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Solicitudes pendientes</h2>
-                <p className="text-sm text-slate-500">Invitaciones y solicitudes aún sin resolver.</p>
-              </div>
-              <span className="text-xs font-medium text-slate-500">{pendientes.length} pendientes</span>
-            </header>
+        (Object.entries(
+          filtradas.reduce((acc: Record<string, ISolicitudEdicion[]>, s: ISolicitudEdicion) => {
+            const cat = categoriaDeTipo((s as any).tipo);
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(s);
+            return acc;
+          }, {}) as Record<string, ISolicitudEdicion[]>
+        ) as [string, ISolicitudEdicion[]][]).map(([cat, items]) => (
+          <section key={cat} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">{cat}</h2>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">{items.length}</span>
+            </div>
 
-            {pendientes.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                No hay solicitudes pendientes.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {pendientes.map((solicitud) => (
-                  <li
-                    key={solicitud.id}
-                    className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-slate-900">{solicitud.jugador.nombre}</p>
-                        <span className="text-xs font-medium uppercase tracking-wide text-amber-700">
-                          {solicitud.origen === 'equipo' ? 'Invitación enviada' : 'Solicitud entrante'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        Estado: {solicitud.estado} · Fecha:{' '}
-                        {solicitud.fechaSolicitud ? new Date(solicitud.fechaSolicitud).toLocaleDateString('es-AR') : '—'}
-                      </p>
-                      <p className="text-xs text-slate-500">{solicitud.mensaje}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Tipo</th>
+                    <th className="px-3 py-2">Estado</th>
+                    <th className="px-3 py-2">Creado</th>
+                    <th className="px-3 py-2">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(items as ISolicitudEdicion[]).slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize).map((s: any) => (
+                    <>
+                      <tr key={s._id} className="border-t border-slate-100">
+                        <td className="px-3 py-2 font-medium text-slate-900">
+                          <button onClick={() => setExpanded((prev) => ({ ...prev, [s._id]: !prev[s._id] }))} className="mr-2 text-brand-600 hover:underline">
+                            {expanded[s._id] ? 'Ocultar' : 'Ver'}
+                          </button>
+                          {labelTipo(s.tipo)}
+                        </td>
+                        <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 text-xs ${s.estado === 'pendiente' ? 'bg-amber-100 text-amber-800' : s.estado === 'aceptado' ? 'bg-emerald-100 text-emerald-800' : s.estado === 'rechazado' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}`}>{s.estado}</span></td>
+                        <td className="px-3 py-2 text-slate-600">{new Date(s.createdAt).toLocaleString()}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              disabled={accionando === s._id || s.estado !== 'pendiente'}
+                              onClick={() => void manejarAprobar(s)}
+                              className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
+                            >
+                              Aprobar
+                            </button>
+                            {rechazoEdit?.id === s._id ? (
+                              <>
+                                <input value={rechazoEdit?.motivo ?? ''} onChange={(e) => setRechazoEdit({ id: s._id, motivo: e.target.value })} placeholder="Motivo" className="w-40 rounded border border-slate-300 px-2 py-1 text-xs" />
+                                <button disabled={accionando === s._id || s.estado !== 'pendiente'} onClick={() => void manejarRechazar(s)} className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300">Confirmar</button>
+                                <button onClick={() => setRechazoEdit(null)} className="rounded border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                              </>
+                            ) : (
+                              <button disabled={accionando === s._id || s.estado !== 'pendiente'} onClick={() => setRechazoEdit({ id: s._id, motivo: '' })} className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300">Rechazar</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      {expanded[s._id] ? (
+                        <tr className="border-t border-slate-100 bg-slate-50/50">
+                          <td colSpan={4} className="px-3 py-3">
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="mb-2 text-xs font-semibold text-slate-500">Datos propuestos</p>
+                              <pre className="max-h-64 overflow-auto rounded bg-slate-50 p-2 text-xs text-slate-700">{JSON.stringify(s.datosPropuestos || {}, null, 2)}</pre>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex items-center justify-end gap-2 text-sm">
+              <span className="text-slate-500">Página {page} de {totalPages}</span>
+              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded border border-slate-200 px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
+              <button disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))} className="rounded border border-slate-200 px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50">Next</button>
+            </div>
           </section>
-
-          <section>
-            <header className="mb-3 flex items-center justify_between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Historial reciente</h2>
-                <p className="text-sm text-slate-500">Solicitudes aceptadas, rechazadas o finalizadas.</p>
-              </div>
-            </header>
-
-            {historialAgrupado.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
-                No hay movimientos recientes.
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {historialAgrupado.slice(0, 10).map((item) => (
-                  <li
-                    key={`${item.id}-${item.estado}`}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{item.jugadorNombre}</p>
-                        <p className="text-xs text-slate-500">
-                          Estado: <span className="capitalize">{item.estado}</span>{' '}
-                          {item.fechaAceptacion
-                            ? `· ${new Date(item.fechaAceptacion).toLocaleDateString('es-AR')}`
-                            : item.fechaSolicitud
-                              ? `· ${new Date(item.fechaSolicitud).toLocaleDateString('es-AR')}`
-                              : ''}
-                        </p>
-                      </div>
-                      <span className="text-xs font-medium text-slate-500">Rol: {item.rol ?? '—'}</span>
-                    </div>
-                    <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-slate-500 sm:grid-cols-3">
-                      <span>Inicio: {item.fechaInicio ? new Date(item.fechaInicio).toLocaleDateString('es-AR') : '—'}</span>
-                      <span>Fin: {item.fechaFin ? new Date(item.fechaFin).toLocaleDateString('es-AR') : '—'}</span>
-                      <span>Origen: {item.origen ?? '—'}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+        ))
       )}
     </div>
   );

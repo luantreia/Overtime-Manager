@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { obtenerSolicitudesEdicion, actualizarSolicitudEdicion, cancelarSolicitudEdicion } from '../services/solicitudesEdicionService';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { getSolicitudesEdicion, actualizarSolicitudEdicion, cancelarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
 import { getEquipo } from '../../equipo/services/equipoService';
 import { getUsuarioById, getAdminsEquipo } from '../../auth/services/usersService';
-import type { SolicitudEdicion, Usuario } from '../../../types';
+import type { Usuario } from '../../../types';
+import type { ISolicitudEdicion } from '../../../types/solicitudesEdicion';
 import { useAuth } from '../../../app/providers/AuthContext';
 import { getRelacionesPorJugadorRaw } from '../services/jugadorEquipoService';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
@@ -28,7 +29,7 @@ interface Props {
 }
 
 const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores = [] }) => {
-  const [solicitudes, setSolicitudes] = useState<SolicitudEdicion[]>([]);
+  const [solicitudes, setSolicitudes] = useState<ISolicitudEdicion[]>([]);
   const [loading, setLoading] = useState(false);
   const [nombresEquipos, setNombresEquipos] = useState<Map<string, string>>(new Map());
   const [usuariosCreadores, setUsuariosCreadores] = useState<Map<string, Usuario>>(new Map());
@@ -37,9 +38,32 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
   const { addToast } = useToast();
   const [contratoToEquipo, setContratoToEquipo] = useState<Map<string, string>>(new Map());
 
+  const nombresEquiposRef = useRef(nombresEquipos);
+  const usuariosCreadoresRef = useRef(usuariosCreadores);
+  const adminsEquiposRef = useRef(adminsEquipos);
+
+  useEffect(() => {
+    nombresEquiposRef.current = nombresEquipos;
+  }, [nombresEquipos]);
+
+  useEffect(() => {
+    usuariosCreadoresRef.current = usuariosCreadores;
+  }, [usuariosCreadores]);
+
+  useEffect(() => {
+    adminsEquiposRef.current = adminsEquipos;
+  }, [adminsEquipos]);
+
   const cargarNombresEquipos = useCallback(async (equipoIds: string[]) => {
-    const nuevosNombres = new Map(nombresEquipos);
-    const idsFaltantes = equipoIds.filter(id => !nuevosNombres.has(id));
+    const actuales = nombresEquiposRef.current;
+    const idsFaltantes = equipoIds.filter(id => !actuales.has(id));
+
+    if (idsFaltantes.length === 0) {
+      return;
+    }
+
+    const nuevosNombres = new Map(actuales);
+    let huboCambios = false;
 
     for (const equipoId of idsFaltantes) {
       try {
@@ -48,51 +72,80 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
       } catch (error) {
         console.error(`Error cargando equipo ${equipoId}:`, error);
         nuevosNombres.set(equipoId, `Equipo ${equipoId.slice(-6)}`);
+      } finally {
+        huboCambios = true;
       }
     }
 
-    setNombresEquipos(nuevosNombres);
-  }, [nombresEquipos]);
+    if (huboCambios) {
+      nombresEquiposRef.current = nuevosNombres;
+      setNombresEquipos(nuevosNombres);
+    }
+  }, []);
 
   const cargarUsuariosCreadores = useCallback(async (creadorIds: string[]) => {
-    const nuevosUsuarios = new Map(usuariosCreadores);
-    const idsFaltantes = creadorIds.filter(id => !nuevosUsuarios.has(id) && id !== user?.id);
+    const actuales = usuariosCreadoresRef.current;
+    const idsFaltantes = creadorIds.filter(id => !actuales.has(id) && id !== user?.id);
+
+    if (idsFaltantes.length === 0) {
+      return;
+    }
+
+    const nuevosUsuarios = new Map(actuales);
+    let huboCambios = false;
 
     for (const creadorId of idsFaltantes) {
       try {
         const usuario = await getUsuarioById(creadorId);
         nuevosUsuarios.set(creadorId, usuario);
+        huboCambios = true;
       } catch (error) {
         console.error(`Error cargando usuario ${creadorId}:`, error);
       }
     }
 
-    setUsuariosCreadores(nuevosUsuarios);
-  }, [usuariosCreadores, user?.id]);
+    if (huboCambios) {
+      usuariosCreadoresRef.current = nuevosUsuarios;
+      setUsuariosCreadores(nuevosUsuarios);
+    }
+  }, [user?.id]);
 
   const cargarAdminsEquipos = useCallback(async (equipoIds: string[]) => {
-    const nuevosAdmins = new Map(adminsEquipos);
-    const idsFaltantes = equipoIds.filter(id => !nuevosAdmins.has(id));
+    const actuales = adminsEquiposRef.current;
+    const idsFaltantes = equipoIds.filter(id => !actuales.has(id));
+
+    if (idsFaltantes.length === 0) {
+      return;
+    }
+
+    const nuevosAdmins = new Map(actuales);
+    let huboCambios = false;
 
     for (const equipoId of idsFaltantes) {
       try {
         const admins = await getAdminsEquipo(equipoId);
-        const adminIds = admins.map((a: any) => typeof a === 'string' ? a : a.id);
+        const adminIds = admins.map((a: any) => (typeof a === 'string' ? a : a.id));
         nuevosAdmins.set(equipoId, adminIds);
       } catch (error) {
         console.error(`Error cargando admins equipo ${equipoId}:`, error);
         nuevosAdmins.set(equipoId, []);
+      } finally {
+        huboCambios = true;
       }
     }
 
-    setAdminsEquipos(nuevosAdmins);
-  }, [adminsEquipos]);
+    if (huboCambios) {
+      adminsEquiposRef.current = nuevosAdmins;
+      setAdminsEquipos(nuevosAdmins);
+    }
+  }, []);
 
   const cargarSolicitudes = useCallback(async () => {
     try {
       setLoading(true);
-      // Cargar todas las solicitudes pendientes
-      const todasPendientes = await obtenerSolicitudesEdicion({ estado: 'pendiente' });
+      // Cargar todas las solicitudes pendientes (servicio central)
+      const resp = await getSolicitudesEdicion({ estado: 'pendiente' });
+      const todasPendientes = resp.solicitudes;
 
       // Obtener relaciones para este jugador para resolver contrato -> equipo
       const relaciones = await getRelacionesPorJugadorRaw(jugadorId);
@@ -126,6 +179,11 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
           return !!mapaContratoAEquipo.get(datos.contratoId);
         }
 
+        if (solicitud.tipo === 'jugador-equipo-editar') {
+          const contratoId = solicitud.entidad as string | undefined;
+          return !!(contratoId && mapaContratoAEquipo.get(contratoId));
+        }
+
         return false;
       });
 
@@ -140,6 +198,10 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
           if (s.tipo === 'jugador-equipo-eliminar') {
             const contratoId = (s.datosPropuestos as unknown as DatosEliminarJugadorEquipo).contratoId;
             return mapaContratoAEquipo.get(contratoId);
+          }
+          if (s.tipo === 'jugador-equipo-editar') {
+            const contratoId = s.entidad as string | undefined;
+            return contratoId ? mapaContratoAEquipo.get(contratoId) : undefined;
           }
           return undefined;
         })
@@ -185,6 +247,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
     switch (tipo) {
       case 'jugador-equipo-crear': return 'Solicitar unirse a equipo';
       case 'jugador-equipo-eliminar': return 'Solicitar abandonar equipo';
+      case 'jugador-equipo-editar': return 'Solicitar edición de vínculo';
       default: return tipo;
     }
   };
@@ -226,7 +289,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
   };
 
   // Función para determinar qué acciones puede hacer el usuario con esta solicitud
-  const getAccionesDisponibles = (solicitud: SolicitudEdicion) => {
+  const getAccionesDisponibles = (solicitud: ISolicitudEdicion) => {
     const esSolicitante = solicitud.creadoPor === user?.id;
     const esAdminGlobal = user?.rol === 'admin';
     const esAdminJugadorActual = administradores.includes(user?.id || '');
@@ -262,10 +325,11 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
       }
     }
 
-    // Para solicitudes de jugador-equipo-eliminar: cualquiera de los admin (jugador o equipo) o admin global
-    if (solicitud.tipo === 'jugador-equipo-eliminar') {
+    // Para solicitudes de jugador-equipo-eliminar o editar: cualquiera de los admin (jugador o equipo) o admin global
+    if (solicitud.tipo === 'jugador-equipo-eliminar' || solicitud.tipo === 'jugador-equipo-editar') {
       const datos = solicitud.datosPropuestos as unknown as DatosEliminarJugadorEquipo;
-      const equipoId = contratoToEquipo.get(datos.contratoId);
+      const contratoId = solicitud.tipo === 'jugador-equipo-eliminar' ? datos.contratoId : (solicitud.entidad as string | undefined);
+      const equipoId = contratoId ? contratoToEquipo.get(contratoId) : undefined;
       const adminsEquipo = equipoId ? (adminsEquipos.get(equipoId) || []) : [];
       const esAdminEquipoActual = adminsEquipo.includes(user?.id || '');
 
@@ -295,7 +359,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
             const esSolicitante = solicitud.creadoPor === user?.id;
 
             return (
-              <li key={`${solicitud.id}-${index}`} className="flex items-start justify-between p-3 border border-slate-100 rounded-lg">
+              <li key={`${solicitud._id}-${index}`} className="flex items-start justify-between p-3 border border-slate-100 rounded-lg">
                 <div className="text-sm flex-1">
                   <div className="font-medium text-slate-900">{getTipoLabel(solicitud.tipo)}</div>
                   <div className="text-xs text-slate-500 mt-1">
@@ -348,7 +412,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
                     <div className="flex gap-1">
                       {acciones.puedeCancelar && !acciones.puedeAprobar && !acciones.puedeRechazar ? (
                         <button
-                          onClick={() => handleCancelar(solicitud.id)}
+                          onClick={() => handleCancelar(solicitud._id)}
                           className="text-xs bg-slate-500 text-white px-2 py-1 rounded hover:bg-slate-600"
                           title="Cancelar solicitud"
                         >
@@ -358,7 +422,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
                         <>
                           {acciones.puedeAprobar && (
                             <button
-                              onClick={() => handleAprobar(solicitud.id)}
+                              onClick={() => handleAprobar(solicitud._id)}
                               className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
                               title="Aprobar solicitud"
                             >
@@ -367,7 +431,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
                           )}
                           {acciones.puedeRechazar && (
                             <button
-                              onClick={() => handleRechazar(solicitud.id)}
+                              onClick={() => handleRechazar(solicitud._id)}
                               className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                               title="Rechazar solicitud"
                             >

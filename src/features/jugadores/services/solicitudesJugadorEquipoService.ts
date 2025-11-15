@@ -1,32 +1,29 @@
-import { crearSolicitudEdicion, obtenerSolicitudesEdicion, actualizarSolicitudEdicion } from './solicitudesEdicionService';
-import type { SolicitudCrearJugadorEquipo } from './solicitudesEdicionService';
+import { crearSolicitudEdicion, getSolicitudesEdicion, actualizarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
+import type { ISolicitudEdicion } from '../../../types/solicitudesEdicion';
 
 // Funciones para crear solicitudes de JugadorEquipo
-export const solicitarCrearContratoJugadorEquipo = (payload: SolicitudCrearJugadorEquipo['datosPropuestos']) =>
-  crearSolicitudEdicion({
-    tipo: 'jugador-equipo-crear',
-    entidad: null,
-    datosPropuestos: payload,
-  });
+export const solicitarCrearContratoJugadorEquipo = (payload: {
+  jugadorId: string;
+  equipoId: string;
+  rol?: string;
+  numeroCamiseta?: number;
+  fechaInicio?: string;
+  fechaFin?: string;
+}) =>
+  crearSolicitudEdicion({ tipo: 'jugador-equipo-crear', entidad: undefined, datosPropuestos: payload });
 
 export const solicitarEliminarContratoJugadorEquipo = (contratoId: string) =>
-  crearSolicitudEdicion({
-    tipo: 'jugador-equipo-eliminar',
-    entidad: null,
-    datosPropuestos: { contratoId },
-  });
+  crearSolicitudEdicion({ tipo: 'jugador-equipo-eliminar', entidad: undefined, datosPropuestos: { contratoId } });
 
 // Funciones para gestionar solicitudes (para admins)
-export const obtenerSolicitudesCrearJugadorEquipo = (filtros?: { equipoId?: string; estado?: string }) => {
-  const params: any = { tipo: 'jugador-equipo-crear' };
-  if (filtros?.estado) params.estado = filtros.estado;
-  return obtenerSolicitudesEdicion(params);
+export const obtenerSolicitudesCrearJugadorEquipo = async (filtros?: { equipoId?: string; estado?: string }): Promise<ISolicitudEdicion[]> => {
+  const resp = await getSolicitudesEdicion({ tipo: 'jugador-equipo-crear', estado: filtros?.estado as any });
+  return resp.solicitudes;
 };
 
-export const obtenerSolicitudesEliminarJugadorEquipo = (filtros?: { equipoId?: string; estado?: string }) => {
-  const params: any = { tipo: 'jugador-equipo-eliminar' };
-  if (filtros?.estado) params.estado = filtros.estado;
-  return obtenerSolicitudesEdicion(params);
+export const obtenerSolicitudesEliminarJugadorEquipo = async (filtros?: { equipoId?: string; estado?: string }): Promise<ISolicitudEdicion[]> => {
+  const resp = await getSolicitudesEdicion({ tipo: 'jugador-equipo-eliminar', estado: filtros?.estado as any });
+  return resp.solicitudes;
 };
 
 export const aprobarSolicitudJugadorEquipo = (solicitudId: string) =>
