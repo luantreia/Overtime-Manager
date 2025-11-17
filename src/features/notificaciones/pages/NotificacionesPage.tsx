@@ -110,6 +110,14 @@ const NotificacionesPage = () => {
 
   const perteneceAlJugador = (s: ISolicitudEdicion, jugadorId: string) => {
     try {
+      // Para solicitudes de edición de contratos, verificar si el jugador está relacionado con el contrato
+      if (s.tipo === 'jugador-equipo-editar' && s.entidad) {
+        // El entidad contiene el ID del contrato, verificar si el contrato pertenece al jugador
+        const dp = (s as any).datosPropuestos || {};
+        return dp.jugadorId === jugadorId || dp.jugador === jugadorId;
+      }
+      
+      // Para otras solicitudes, mantener la lógica original
       if ((s as any).entidad === jugadorId) return true;
       const dp = (s as any).datosPropuestos || {};
       return dp.jugadorId === jugadorId || dp.jugador === jugadorId || JSON.stringify(dp).includes(jugadorId);
