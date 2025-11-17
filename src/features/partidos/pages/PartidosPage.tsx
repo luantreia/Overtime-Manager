@@ -3,7 +3,7 @@ import PartidoCard from '../../../shared/components/PartidoCard/PartidoCard';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { getEquiposDelJugador } from '../../jugadores/services/jugadorEquipoService';
 import { getPartido, getPartidos } from '../services/partidoService';
-import { InvalidObjectIdError } from '../../../utils/validateObjectId';
+import { InvalidObjectIdError } from '../../../shared/utils/validateObjectId';
 import type { Partido, Equipo } from '../../../types';
 import { ModalPartidoAdmin } from '../components';
 import { useToken } from '../../../app/providers/AuthContext';

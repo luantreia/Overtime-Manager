@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import  ModalBase  from '../../../../shared/components/ModalBase/ModalBase';
 import { getAlineacion, guardarAlineacion, crearJugadorPartido, eliminarJugadorPartido, getPartidoDetallado } from '../../services/partidoService';
-import { InvalidObjectIdError } from '../../../../utils/validateObjectId';
+import { InvalidObjectIdError } from '../../../../shared/utils/validateObjectId';
 import { getJugadoresEquipo } from '../../../jugadores/services/jugadorEquipoService';
 import type { Jugador, JugadorPartido } from '../../../../types';
 import { useToast } from '../../../../shared/components/Toast/ToastProvider';

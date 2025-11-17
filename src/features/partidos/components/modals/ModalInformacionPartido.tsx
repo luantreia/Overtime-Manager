@@ -7,7 +7,7 @@ import {
   extractEquipoId,
   type PartidoDetallado,
 } from '../../services/partidoService';
-import { InvalidObjectIdError } from '../../../../utils/validateObjectId';
+import { InvalidObjectIdError } from '../../../../shared/utils/validateObjectId';
 import type { Competencia } from '../../../../types';
 import { getParticipaciones as getCompetencias } from '../../../competencias/services/equipoCompetenciaService';
 import { useToast } from '../../../../shared/components/Toast/ToastProvider';

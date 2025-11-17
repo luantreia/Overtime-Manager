@@ -1,6 +1,6 @@
-import { authFetch } from '../../../utils/authFetch';
+import { authFetch } from '../../../shared/utils/authFetch';
 import type { Partido, JugadorPartido, Competencia } from '../../../types';
-import { isValidObjectId, InvalidObjectIdError } from '../../../utils/validateObjectId';
+import { isValidObjectId, InvalidObjectIdError } from '../../../shared/utils/validateObjectId';
 
 type PartidoQuery = {
   equipoId: string;

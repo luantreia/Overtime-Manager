@@ -20,23 +20,14 @@ export type EstadoJugador = 'activo' | 'pendiente' | 'baja';
 export interface Jugador {
   id: string;
   nombre: string;
-  alias?: string;
-  fechaNacimiento?: string;
-  genero?: 'masculino' | 'femenino' | 'otro';
-  foto?: string;
-  nacionalidad?: string;
-  creadoPor?: string;
-  administradores?: string[];
-  // legacy/manager fields (may not exist in backend model)
-  posicion?: string;
-  estado?: EstadoJugador;
+  posicion: string;
+  estado: EstadoJugador;
   numeroCamiseta?: number;
   rolEnEquipo?: string;
   rol?: string;
   fechaInicio?: string;
   fechaFin?: string | null;
   contratoId?: string;
-  edad?: number;
 }
 
 export interface SolicitudJugador {
@@ -46,15 +37,6 @@ export interface SolicitudJugador {
   mensaje?: string;
   origen?: 'equipo' | 'jugador';
   fechaSolicitud?: string;
-  solicitadoPor?: string;
-  equipo?: {
-    id: string;
-    nombre: string;
-    creadoPor?: string;
-    administradores?: string[];
-  };
-  fechaInicio?: string;
-  fechaFin?: string | null;
 }
 
 export interface ContratoJugadorResumen {
@@ -119,8 +101,6 @@ export interface SolicitudCompetencia {
   fechaSolicitud: string;
 }
 
-
-
 export interface EstadisticaJugador {
   jugador: Jugador;
   partidosJugados: number;
@@ -164,26 +144,4 @@ export interface SolicitudEdicion {
   estado: SolicitudEdicionEstado;
   creadoPor: string;
   fechaCreacion?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface TemporadaJugador {
-  id: string;
-  nombre: string;
-  descripcion?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
-  competencia: {
-    id: string;
-    nombre: string;
-    modalidad: string;
-    categoria: string;
-  };
-  equipo: {
-    id: string;
-    nombre: string;
-  };
-  estado: string;
-  rol?: string;
 }

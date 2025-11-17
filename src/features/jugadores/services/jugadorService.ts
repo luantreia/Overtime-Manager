@@ -1,4 +1,4 @@
-import { authFetch } from '../../../utils/authFetch';
+import { authFetch } from '../../../shared/utils/authFetch';
 import type { Jugador } from '../../../types';
 
 // Normalizador ligero: respeta los datos que provienen del modelo backend.

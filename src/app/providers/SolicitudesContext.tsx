@@ -9,7 +9,7 @@ import {
   SolicitudEdicionEstado,
   ISolicitudesPaginadas,
   ISolicitudLoadingState,
-} from '../../types/solicitudesEdicion';
+} from '../../shared/types/solicitudesEdicion';
 import {
   getSolicitudesEdicion,
   getSolicitudEdicionById,

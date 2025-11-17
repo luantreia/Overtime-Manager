@@ -22,7 +22,7 @@ import type { EstadisticaManualBackend } from '../../hooks/useEstadisticasModal'
 import type { JugadorPartido } from '../../../../types';
 import ConfirmModal from '../../../../shared/components/ConfirmModal/ConfirmModal';
 import { useToast } from '../../../../shared/components/Toast/ToastProvider';
-import { InvalidObjectIdError } from '../../../../utils/validateObjectId';
+import { InvalidObjectIdError } from '../../../../shared/utils/validateObjectId';
 
 type ModalPartidoAdminProps = {
   partidoId: string;

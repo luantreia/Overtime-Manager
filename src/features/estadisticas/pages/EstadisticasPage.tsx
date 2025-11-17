@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { getResumenEstadisticasJugador } from '../services/estadisticasService';
 import EstadisticaCard from '../../../shared/components/EstadisticaCard';
-import { formatDate } from '../../../utils/formatDate';
-import { formatNumber } from '../../../utils/formatNumber';
+import { formatDate } from '../../../shared/utils/formatDate';
+import { formatNumber } from '../../../shared/utils/formatNumber';
 import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 

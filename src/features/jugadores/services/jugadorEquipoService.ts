@@ -1,7 +1,7 @@
-import { authFetch } from '../../../utils/authFetch';
+import { authFetch } from '../../../shared/utils/authFetch';
 import type { Jugador, SolicitudJugador, ContratoJugadorResumen } from '../../../types';
 import { getEquipo } from '../../equipo/services/equipoService';
-import { isValidObjectId, InvalidObjectIdError } from '../../../utils/validateObjectId';
+import { isValidObjectId, InvalidObjectIdError } from '../../../shared/utils/validateObjectId';
 import type { Equipo } from '../../../types';
 
 type JugadorEquipoQuery = {

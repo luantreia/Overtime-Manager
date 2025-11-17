@@ -1,5 +1,5 @@
-import { authFetch } from '../../../utils/authFetch';
-import { isValidObjectId, InvalidObjectIdError } from '../../../utils/validateObjectId';
+import { authFetch } from '../../../shared/utils/authFetch';
+import { isValidObjectId, InvalidObjectIdError } from '../../../shared/utils/validateObjectId';
 import type { EquipoCompetencia, SolicitudCompetencia } from '../../../types';
 
 type EquipoCompetenciaQuery = {
