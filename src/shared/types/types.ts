@@ -7,6 +7,12 @@ export interface Usuario {
   rol: RolUsuario;
 }
 
+export interface AdminUser {
+  _id: string;
+  nombre?: string;
+  email?: string;
+}
+
 export interface Equipo {
   id: string;
   nombre: string;

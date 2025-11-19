@@ -4,7 +4,7 @@ import PlayerDetails from '../components/PlayerDetails';
 import PlayerTeams from '../components/PlayerTeams';
 import ModalSolicitarIngreso from '../components/modals/ModalSolicitarIngreso';
 import SolicitudModal from '../../../shared/components/SolicitudModal/SolicitudModal';
-import SeccionAdministradoresJugador from '../components/SeccionAdministradoresJugador';
+import ModalGestionAdministradoresEntidad from '../../../shared/components/modalGestionAdministradoresEntidad/ModalGestionAdministradoresEntidad';
 import PlayerSolicitudesEdicion from '../components/PlayerSolicitudesEdicion';
 import PlayerStats from '../components/PlayerStats';
 import { getJugadorById, updateJugador } from '../services/jugadorService';
@@ -27,8 +27,7 @@ const PlayerProfilePage: React.FC = () => {
   const [contratosPorEquipo, setContratosPorEquipo] = useState<Record<string, any>>({});
   const [estadisticas, setEstadisticas] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<Map<string, Usuario>>(new Map());
-  const [nuevoAdmin, setNuevoAdmin] = useState('');
-  const [loadingAgregar, setLoadingAgregar] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // editar contrato modal (SolicitudModal) state
   const [isSolicitudEditOpen, setIsSolicitudEditOpen] = useState(false);
@@ -231,55 +230,15 @@ const PlayerProfilePage: React.FC = () => {
   };
 
 
-  const handleNuevoAdminChange = (value: string) => {
-    setNuevoAdmin(value);
-  };
-
-  const handleAgregarAdmin = async () => {
-    const email = nuevoAdmin.trim();
-    if (!email || !jugador) return;
-
-    try {
-      setLoadingAgregar(true);
-      await agregarAdminJugador(jugador.id, email);
-      // Recargar administradores
-      const adminsActualizados = await getAdminsJugador(jugador.id);
-      const adminIds = adminsActualizados.map((a: any) => typeof a === 'string' ? a : a.id);
-      setJugador({ ...jugador, administradores: adminIds });
-      // Poblar usuarios (si no poblados, fetch)
-      const userPromises = adminsActualizados.map(async (a: any) => {
-        if (typeof a === 'object' && a.id) return a as Usuario;
-        // Fetch
-        return await getUsuarioById(a).catch(() => ({ id: a, nombre: a, email: 'Usuario no encontrado' } as Usuario));
-      });
-      const users = await Promise.all(userPromises);
-      const adminUsersMap = new Map<string, Usuario>();
-      users.forEach((user: Usuario) => {
-        adminUsersMap.set(user.id, user);
-      });
-      setAdminUsers(adminUsersMap);
-      addToast({ type: 'success', title: 'Agregado', message: 'Administrador agregado' });
-      setNuevoAdmin('');
-    } catch (error: any) {
-      console.error('Error agregando admin:', error);
-      addToast({ type: 'error', title: 'Error', message: error?.message || 'No se pudo agregar el administrador' });
-    } finally {
-      setLoadingAgregar(false);
-    }
-  };
-
-  const handleQuitarAdmin = async (id: string) => {
+  const refreshAdmins = async () => {
     if (!jugador) return;
     try {
-      await quitarAdminJugador(jugador.id, id);
-      // Recargar administradores
       const adminsActualizados = await getAdminsJugador(jugador.id);
       const adminIds = adminsActualizados.map((a: any) => typeof a === 'string' ? a : a.id);
       setJugador({ ...jugador, administradores: adminIds });
-      // Poblar usuarios (si no poblados, fetch)
+      // Poblar usuarios
       const userPromises = adminsActualizados.map(async (a: any) => {
         if (typeof a === 'object' && a.id) return a as Usuario;
-        // Fetch
         return await getUsuarioById(a).catch(() => ({ id: a, nombre: a, email: 'Usuario no encontrado' } as Usuario));
       });
       const users = await Promise.all(userPromises);
@@ -288,11 +247,58 @@ const PlayerProfilePage: React.FC = () => {
         adminUsersMap.set(user.id, user);
       });
       setAdminUsers(adminUsersMap);
-      addToast({ type: 'success', title: 'Quitado', message: 'Administrador removido' });
-    } catch (error: any) {
-      console.error('Error quitando admin:', error);
-      addToast({ type: 'error', title: 'Error', message: error?.message || 'No se pudo quitar el administrador' });
+    } catch (error) {
+      console.error('Error refreshing admins:', error);
     }
+  };
+
+  const addAdminFunction = async (entityId: string, { email }: { email: string }) => {
+    await agregarAdminJugador(entityId, email);
+    await refreshAdmins();
+    addToast({ type: 'success', title: 'Agregado', message: 'Administrador agregado' });
+  };
+
+  const getAdminsFunction = async (entityId: string) => {
+    if (!jugador?.administradores) return { administradores: [] };
+    
+    // Ensure all admin users are loaded
+    const usersToFetch = jugador.administradores.filter((id: string) => !adminUsers.has(id));
+    if (usersToFetch.length > 0) {
+      try {
+        const fetchedUsers = await Promise.all(
+          usersToFetch.map((id: string) => 
+            getUsuarioById(id)
+              .then(user => ({ user, id }))
+              .catch(() => ({ 
+                user: { id, nombre: id, email: 'Usuario no encontrado' } as Usuario, 
+                id 
+              }))
+          )
+        );
+        setAdminUsers(prev => {
+          const newMap = new Map(prev);
+          fetchedUsers.forEach(({ user }) => {
+            newMap.set(user.id, user);
+          });
+          return newMap;
+        });
+      } catch (error) {
+        console.error('Error loading admin users:', error);
+      }
+    }
+    
+    return {
+      administradores: (jugador.administradores.map((id: string) => {
+        const user = adminUsers.get(id);
+        return { _id: id, nombre: user?.nombre, email: user?.email };
+      }))
+    };
+  };
+
+  const removeAdminFunction = async (entityId: string, adminId: string) => {
+    await quitarAdminJugador(entityId, adminId);
+    await refreshAdmins();
+    addToast({ type: 'success', title: 'Quitado', message: 'Administrador removido' });
   };
 
   if (loading && !jugador) {
@@ -344,16 +350,23 @@ const PlayerProfilePage: React.FC = () => {
           <PlayerSolicitudesEdicion jugadorId={jugador.id} administradores={jugador.administradores} />
           {(user?.rol === 'admin' || user?.id === jugador.creadoPor) && (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <SeccionAdministradoresJugador
-                  admins={jugador.administradores?.map((id: string) => {
-                  const user = adminUsers.get(id);
-                  return { id, nombre: user?.nombre, email: user?.email };
-                }) || []}
-                nuevoAdmin={nuevoAdmin}
-                onNuevoAdminChange={handleNuevoAdminChange}
-                onAgregarAdmin={handleAgregarAdmin}
-                onQuitarAdmin={handleQuitarAdmin}
-                loadingAgregar={loadingAgregar}
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Administradores</h3>
+                <button
+                  onClick={() => setIsAdminModalOpen(true)}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                >
+                  Gestionar
+                </button>
+              </div>
+              <ModalGestionAdministradoresEntidad
+                isOpen={isAdminModalOpen}
+                onClose={() => setIsAdminModalOpen(false)}
+                entityId={jugador.id}
+                title="Administradores del Jugador"
+                addFunction={addAdminFunction}
+                getFunction={getAdminsFunction}
+                removeFunction={removeAdminFunction}
               />
             </div>
           )}
