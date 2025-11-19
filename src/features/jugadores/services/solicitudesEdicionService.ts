@@ -3,7 +3,7 @@ import type { SolicitudEdicion } from '../../../types';
 
 
 type CrearSolicitudPayload = {
-  tipo: string;
+  tipo: SolicitudEdicion['tipo'];
   entidad: string | null;
   datosPropuestos: Record<string, unknown>;
 };
@@ -33,7 +33,7 @@ export type SolicitudEliminarJugadorEquipo = {
 // Shape que devuelve el backend
 type BackendSolicitud = {
   _id: string;
-  tipo: string;
+  tipo: SolicitudEdicion['tipo'] | string;
   entidad?: string | null;
   datosPropuestos: Record<string, unknown>;
   estado: string;
@@ -43,14 +43,17 @@ type BackendSolicitud = {
 };
 
 const mapSolicitud = (s: BackendSolicitud): SolicitudEdicion => ({
+  _id: s._id,
   id: s._id,
-  tipo: s.tipo,
+  tipo: s.tipo as SolicitudEdicion['tipo'],
   entidad: s.entidad ?? null,
   datosPropuestos: s.datosPropuestos,
   estado: s.estado as SolicitudEdicion['estado'],
+  aceptadoPor: [],
+  requiereDobleConfirmacion: false,
   creadoPor: s.creadoPor,
-  createdAt: s.createdAt,
-  updatedAt: s.updatedAt,
+  createdAt: s.createdAt ?? '',
+  updatedAt: s.updatedAt ?? '',
 });
 
 export const crearSolicitudEdicion = (payload: CrearSolicitudPayload) =>

@@ -65,8 +65,9 @@ const mapJugador = (relacion: BackendJugadorEquipo): Jugador => {
     estado: relacion.estado === 'aceptado' ? 'activo' : relacion.estado === 'baja' ? 'baja' : 'pendiente',
     rolEnEquipo: relacion.rol,
     rol: relacion.rol,
-    fechaInicio: relacion.desde ?? undefined,
-    fechaFin: relacion.hasta ?? undefined,
+    // Prefer explicit fechaInicio/fechaFin when backend provides them
+    fechaInicio: (relacion as any).fechaInicio ?? relacion.desde ?? undefined,
+    fechaFin: (relacion as any).fechaFin ?? relacion.hasta ?? undefined,
     contratoId: relacion._id,
     creadoPor: (typeof relacion.jugador === 'object' && (relacion.jugador as any).creadoPor) ? (relacion.jugador as any).creadoPor : undefined,
     administradores: (typeof relacion.jugador === 'object' && (relacion.jugador as any).administradores) ? (relacion.jugador as any).administradores : undefined,
@@ -88,7 +89,7 @@ const mapSolicitud = (relacion: BackendJugadorEquipo): SolicitudJugador => ({
     return { id: raw._id, nombre: raw.nombre, creadoPor: raw.creadoPor, administradores: raw.administradores };
   })(),
   fechaInicio: relacion.desde ?? undefined,
-  fechaFin: relacion.hasta ?? null,
+  fechaFin: (relacion as any).fechaFin ?? relacion.hasta ?? null,
 });
 
 const mapContratoResumen = (relacion: BackendJugadorEquipo): ContratoJugadorResumen => {
@@ -100,8 +101,8 @@ const mapContratoResumen = (relacion: BackendJugadorEquipo): ContratoJugadorResu
     estado: relacion.estado,
     rol: relacion.rol,
     origen: relacion.origen,
-    fechaInicio: relacion.desde,
-    fechaFin: relacion.hasta ?? null,
+    fechaInicio: (relacion as any).fechaInicio ?? relacion.desde,
+    fechaFin: (relacion as any).fechaFin ?? relacion.hasta ?? null,
     fechaSolicitud: relacion.fechaSolicitud ?? relacion.createdAt,
     fechaAceptacion: relacion.fechaAceptacion ?? undefined,
   };

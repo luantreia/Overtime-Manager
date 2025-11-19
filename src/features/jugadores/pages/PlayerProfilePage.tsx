@@ -3,11 +3,12 @@ import { useParams } from 'react-router-dom';
 import PlayerDetails from '../components/PlayerDetails';
 import PlayerTeams from '../components/PlayerTeams';
 import ModalSolicitarIngreso from '../components/modals/ModalSolicitarIngreso';
+import SolicitudModal from '../../../shared/components/SolicitudModal/SolicitudModal';
 import SeccionAdministradoresJugador from '../components/SeccionAdministradoresJugador';
 import PlayerSolicitudesEdicion from '../components/PlayerSolicitudesEdicion';
 import PlayerStats from '../components/PlayerStats';
 import { getJugadorById, updateJugador } from '../services/jugadorService';
-import { getEquiposDelJugador } from '../services/jugadorEquipoService';
+import { getEquiposDelJugador, getRelacionesPorJugadorRaw } from '../services/jugadorEquipoService';
 import { solicitarCrearContratoJugadorEquipo } from '../services/solicitudesJugadorEquipoService';
 import { getResumenEstadisticasJugador } from '../../estadisticas/services/estadisticasService';
 import { getUsuarioById, agregarAdminJugador, quitarAdminJugador, getAdminsJugador } from '../../auth/services/usersService';
@@ -15,6 +16,7 @@ import type { Jugador, Usuario } from '../../../types';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { useAuth } from '../../../app/providers/AuthContext';
+import { fromMainValueToError } from 'recharts/types/state/selectors/axisSelectors';
 
 const PlayerProfilePage: React.FC = () => {
   const { playerId } = useParams();
@@ -22,10 +24,17 @@ const PlayerProfilePage: React.FC = () => {
   const [jugador, setJugador] = useState<Jugador | null>(null);
   const [loading, setLoading] = useState(false);
   const [equipos, setEquipos] = useState([] as any[]);
+  const [contratosPorEquipo, setContratosPorEquipo] = useState<Record<string, any>>({});
   const [estadisticas, setEstadisticas] = useState<any[]>([]);
   const [adminUsers, setAdminUsers] = useState<Map<string, Usuario>>(new Map());
   const [nuevoAdmin, setNuevoAdmin] = useState('');
   const [loadingAgregar, setLoadingAgregar] = useState(false);
+
+  // editar contrato modal (SolicitudModal) state
+  const [isSolicitudEditOpen, setIsSolicitudEditOpen] = useState(false);
+  const [solicitudEditContext, setSolicitudEditContext] = useState<any | undefined>(undefined);
+  const [solicitudEditPrefillTipo, setSolicitudEditPrefillTipo] = useState<any | undefined>(undefined);
+  const [solicitudEditPrefillDatos, setSolicitudEditPrefillDatos] = useState<Record<string, any> | undefined>(undefined);
 
   const { jugadorSeleccionado } = useJugador();
   const { user } = useAuth();
@@ -72,12 +81,26 @@ const PlayerProfilePage: React.FC = () => {
           return;
         }
 
-        const [eqs, resumen] = await Promise.all([
+        const [eqs, resumen, relacionesRaw] = await Promise.all([
           getEquiposDelJugador(jugador.id),
           getResumenEstadisticasJugador(jugador.id),
+          getRelacionesPorJugadorRaw(jugador.id),
         ]);
         if (cancelled) return;
         setEquipos(eqs || []);
+        // Build contratosPorEquipo map (prefer accepted relation per equipo)
+        const map: Record<string, any> = {};
+        (relacionesRaw || []).forEach((rel: any) => {
+          const rawEquipo = (rel as any).equipo;
+          let equipoId: string | undefined;
+          if (!rawEquipo) return;
+          if (typeof rawEquipo === 'string') equipoId = rawEquipo;
+          else if (rawEquipo && rawEquipo._id) equipoId = rawEquipo._id;
+          if (!equipoId) return;
+          if (!map[equipoId]) map[equipoId] = rel;
+          if (rel.estado === 'aceptado') map[equipoId] = rel;
+        });
+        setContratosPorEquipo(map);
         // resumen may contain estadisticasPorPartido; map to a simple estadistica array if possible
         const stats = (resumen?.estadisticasPorPartido || []).map((p: any) => ({
           jugador: jugador,
@@ -106,13 +129,13 @@ const PlayerProfilePage: React.FC = () => {
     const currentAdminUsers = new Map(adminUsers);
     
     // Only fetch users that aren't already in the cache
-    const usersToFetch = jugador.administradores.filter(id => !currentAdminUsers.has(id));
+    const usersToFetch = jugador.administradores.filter((id: string) => !currentAdminUsers.has(id));
     
     if (usersToFetch.length === 0) return;
     
     try {
       const fetchedUsers = await Promise.all(
-        usersToFetch.map(id => 
+        usersToFetch.map((id: string) => 
           getUsuarioById(id)
             .then(user => ({ user, id }))
             .catch(() => ({ 
@@ -133,7 +156,7 @@ const PlayerProfilePage: React.FC = () => {
     } catch (error) {
       console.error('Error loading admin users:', error);
     }
-  }, [jugador?.administradores]); // Removed adminUsers from dependencies
+  }, [jugador?.administradores, adminUsers]);
 
   useEffect(() => {
     if (jugador?.administradores && jugador.administradores.length > 0) {
@@ -161,6 +184,24 @@ const PlayerProfilePage: React.FC = () => {
     setInitialEquipoToSolicitar(equipoId);
     setIsSolicitarOpen(true);
   }, []);
+
+  const openEditarContratoModal = useCallback((equipoId: string) => {
+    const rel = contratosPorEquipo[equipoId];
+    if (!rel) return;
+    const contratoId = rel._id;
+    setSolicitudEditContext({ contexto: 'equipo', entidadId: contratoId });
+    setSolicitudEditPrefillTipo('jugador-equipo-editar');
+    setSolicitudEditPrefillDatos({
+      rol: rel.rol,
+      fechaInicio: rel.fechaInicio ?? rel.desde ?? undefined,
+      fechaFin: rel.fechaFin ?? rel.hasta ?? undefined,
+      estado: rel.estado === 'aceptado' ? 'activo' : rel.estado,
+      contratoId: rel._id,
+      jugadorId: rel.jugador && typeof rel.jugador === 'object' ? rel.jugador._id : rel.jugador,
+      equipoId: (rel.equipo && typeof rel.equipo === 'object') ? rel.equipo._id : rel.equipo,
+    });
+    setIsSolicitudEditOpen(true);
+  }, [contratosPorEquipo]);
 
   const handleSolicitarIngreso = useCallback(async (payload: { jugadorId: string; equipoId: string; fechaInicio?: string; fechaFin?: string; rol?: string }) => {
     try {
@@ -278,12 +319,33 @@ const PlayerProfilePage: React.FC = () => {
         </div>
 
         <div className="lg:col-span-2 space-y-6">
-          <PlayerTeams jugador={jugador} equipos={equipos} onSolicitar={(id) => openSolicitarModal(id)} />
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Acciones</h3>
+            <div>
+              <button
+                type="button"
+                onClick={() => openSolicitarModal(undefined)}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700"
+              >
+                Nueva solicitud de ingreso
+              </button>
+            </div>
+          </div>
+
+          {(() => {
+            const filtered = equipos.filter((e) => {
+              const rel = contratosPorEquipo?.[e.id];
+              return rel && (rel.estado === 'aceptado' || rel.estado === 'baja');
+            });
+            return (
+              <PlayerTeams jugador={jugador} equipos={filtered} contratosPorEquipo={contratosPorEquipo} onEditarContrato={openEditarContratoModal} />
+            );
+          })()}
           <PlayerSolicitudesEdicion jugadorId={jugador.id} administradores={jugador.administradores} />
           {(user?.rol === 'admin' || user?.id === jugador.creadoPor) && (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <SeccionAdministradoresJugador
-                admins={jugador.administradores?.map(id => {
+                  admins={jugador.administradores?.map((id: string) => {
                   const user = adminUsers.get(id);
                   return { id, nombre: user?.nombre, email: user?.email };
                 }) || []}
@@ -304,6 +366,19 @@ const PlayerProfilePage: React.FC = () => {
         onClose={() => setIsSolicitarOpen(false)}
         onSubmit={handleSolicitarIngreso}
       />
+      {isSolicitudEditOpen && (
+        <SolicitudModal
+          isOpen={isSolicitudEditOpen}
+          contexto={solicitudEditContext}
+          onClose={() => setIsSolicitudEditOpen(false)}
+          onSuccess={async () => {
+            setIsSolicitudEditOpen(false);
+            await refreshExtras();
+          }}
+          prefillTipo={solicitudEditPrefillTipo}
+          prefillDatos={solicitudEditPrefillDatos}
+        />
+      )}
     </div>
   );
 };

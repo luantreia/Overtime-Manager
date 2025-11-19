@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import api from '../../../shared/api/client';
 import PartidoCard from '../../../shared/components/PartidoCard/PartidoCard';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { getEquiposDelJugador } from '../../jugadores/services/jugadorEquipoService';
@@ -28,6 +29,10 @@ const PartidosPage = () => {
   const [partidoAlineacionId, setPartidoAlineacionId] = useState<string | null>(null);
   const [infoModalAbierto, setInfoModalAbierto] = useState(false);
   const [partidoInfoId, setPartidoInfoId] = useState<string | null>(null);
+  const [crearOpen, setCrearOpen] = useState(false);
+  const [visitanteId, setVisitanteId] = useState('');
+  const [fecha, setFecha] = useState('');
+  const [creating, setCreating] = useState(false);
 
   const refreshPartidos = useCallback(async () => {
     const jugadorId = jugadorSeleccionado?.id;
@@ -158,15 +163,68 @@ const PartidosPage = () => {
     );
   }
 
+  const handleCrearAmistoso = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!equipos.length) return;
+    try {
+      setCreating(true);
+      await api.crearAmistoso({ localEquipoId: equipos[0].id, visitanteEquipoId: visitanteId, fecha, tipo: 'amistoso' });
+      setVisitanteId('');
+      setFecha('');
+      setCrearOpen(false);
+      await refreshPartidos();
+      addToast({ type: 'success', title: 'Partido creado', message: 'Amistoso agregado.' });
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Error', message: err.message || 'No se pudo crear el amistoso' });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-slate-900">Partidos</h1>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-500">Programación y resultados relacionados al jugador.</p>
-          {/* Crear partidos desde el flujo de jugador está deshabilitado */}
+          {equipos.length ? (
+            <button
+              type="button"
+              onClick={() => setCrearOpen((o) => !o)}
+              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+            >
+              {crearOpen ? 'Cancelar' : 'Crear Amistoso'}
+            </button>
+          ) : null}
         </div>
       </header>
+
+      {crearOpen && (
+        <form onSubmit={handleCrearAmistoso} className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-700">Nuevo amistoso</h2>
+          <div className="flex flex-wrap gap-2">
+            <input
+              required
+              value={visitanteId}
+              onChange={(e) => setVisitanteId(e.target.value)}
+              placeholder="ID equipo visitante"
+              className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+            <input
+              type="datetime-local"
+              required
+              value={fecha}
+              onChange={(e) => setFecha(e.target.value)}
+              className="rounded border border-slate-300 px-2 py-1 text-sm"
+            />
+            <button
+              disabled={creating}
+              className="rounded bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+            >{creating ? 'Creando…' : 'Guardar'}</button>
+          </div>
+          <p className="text-xs text-slate-500">El equipo local será tu primer equipo asociado.</p>
+        </form>
+      )}
 
       {modalAdminAbierto && partidoAdminId ? (
         <ModalPartidoAdmin

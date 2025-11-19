@@ -23,8 +23,9 @@ const mapBackendJugador = (b: any): Jugador => {
     numeroCamiseta: b?.numeroCamiseta,
     rolEnEquipo: b?.rol ?? b?.rolEnEquipo,
     rol: b?.rol ?? undefined,
-    fechaInicio: b?.desde ?? b?.fechaInicio,
-    fechaFin: b?.hasta ?? b?.fechaFin ?? null,
+    // Prefer explicit `fechaInicio`/`fechaFin` when present; fallback to legacy `desde`/`hasta`.
+    fechaInicio: b?.fechaInicio ?? b?.desde ?? undefined,
+    fechaFin: b?.fechaFin ?? b?.hasta ?? null,
     contratoId: b?._id ?? undefined,
     edad: b?.edad,
   } as Jugador;

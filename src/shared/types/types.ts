@@ -28,6 +28,13 @@ export interface Jugador {
   fechaInicio?: string;
   fechaFin?: string | null;
   contratoId?: string;
+  creadoPor?: string;
+  administradores?: string[];
+  alias?: string;
+  fechaNacimiento?: string;
+  genero?: string;
+  foto?: string;
+  nacionalidad?: string;
 }
 
 export interface SolicitudJugador {
@@ -37,6 +44,10 @@ export interface SolicitudJugador {
   mensaje?: string;
   origen?: 'equipo' | 'jugador';
   fechaSolicitud?: string;
+  solicitadoPor?: string;
+  equipo?: { id: string; nombre?: string; creadoPor?: string; administradores?: string[] };
+  fechaInicio?: string;
+  fechaFin?: string | null;
 }
 
 export interface ContratoJugadorResumen {
@@ -57,6 +68,26 @@ export interface Competencia {
   estado: 'activa' | 'finalizada' | 'inscripcion';
   faseActual?: string;
   posicionActual?: number;
+}
+
+export interface TemporadaJugador {
+  id: string;
+  nombre?: string;
+  competencia: {
+    id?: string;
+    nombre?: string;
+    modalidad?: string;
+    categoria?: string;
+  };
+  equipo: {
+    id?: string;
+    nombre?: string;
+  };
+  fechaInicio?: string;
+  fechaFin?: string | null;
+  estado?: 'activo' | 'baja' | string;
+  rol?: string;
+  descripcion?: string;
 }
 
 export interface EquipoCompetencia {
@@ -133,15 +164,6 @@ export interface Notificacion {
   leida: boolean;
   relacionadoId?: string;
 }
-
-export type SolicitudEdicionEstado = 'pendiente' | 'aceptado' | 'rechazado';
-
-export interface SolicitudEdicion {
-  id: string;
-  tipo: string;
-  entidad?: string | null;
-  datosPropuestos: Record<string, unknown>;
-  estado: SolicitudEdicionEstado;
-  creadoPor: string;
-  fechaCreacion?: string;
-}
+// Note: SolicitudEdicion-related types are defined in
+// `src/shared/types/solicitudesEdicion.ts`. Keeping domain-specific
+// solicitud types there avoids duplication and name collisions.

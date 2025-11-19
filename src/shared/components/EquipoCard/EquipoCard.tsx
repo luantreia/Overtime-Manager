@@ -24,7 +24,7 @@ const EquipoCard = ({ equipo, actions }: EquipoCardProps) => (
       <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
         <p className="font-medium text-slate-700">Staff</p>
         <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-          {equipo.staff.map((miembro) => (
+          {equipo.staff.map((miembro: string) => (
             <li key={miembro}>• {miembro}</li>
           ))}
         </ul>

@@ -2,7 +2,7 @@
 
 export type SolicitudEdicionEstado = 'pendiente' | 'aceptado' | 'rechazado' | 'cancelado';
 
-export type SolicitudEdicionTipo = 
+export type SolicitudEdicionTipo =
   | 'resultadoPartido'
   | 'resultadoSet'
   | 'estadisticasJugadorPartido'
@@ -10,7 +10,6 @@ export type SolicitudEdicionTipo =
   | 'estadisticasEquipoPartido'
   | 'estadisticasEquipoSet'
   | 'jugador-equipo-editar'
-  | 'contratoEquipoCompetencia'
   | 'jugador-equipo-crear'
   | 'jugador-equipo-eliminar'
   | 'participacion-temporada-crear'
@@ -33,7 +32,7 @@ export interface ISolicitudEdicion {
   datosPropuestos: Record<string, unknown>;
   estado: SolicitudEdicionEstado;
   aceptadoPor: string[];
-  requiereDobleConfirmacion: boolean;
+  requiereDobleConfirmacion?: boolean;
   motivoRechazo?: string;
   fechaAceptacion?: string;
   fechaRechazo?: string;
@@ -42,6 +41,12 @@ export interface ISolicitudEdicion {
   createdAt: string;
   updatedAt: string;
 }
+
+// Backwards-compatible alias: some modules import `SolicitudEdicion` (no I prefix).
+// Keep the alias so existing code paths don't need immediate changes.
+// For frontend convenience, expose a type that includes both the MongoDB
+// `_id` and a normalized `id` property. Some UI code expects `id`.
+export type SolicitudEdicion = ISolicitudEdicion & { id: string };
 
 export interface ISolicitudOpciones {
   tipo: SolicitudEdicionTipo;

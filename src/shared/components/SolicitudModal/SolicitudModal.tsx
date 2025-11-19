@@ -58,7 +58,7 @@ export const SolicitudModal: React.FC<SolicitudModalProps> = ({
       setTipoSeleccionado(prefillTipo ?? '');
       setDatosPropuestos(prefillDatos ?? {});
     }
-  }, [isOpen, limpiarError]);
+  }, [isOpen, limpiarError, prefillTipo, prefillDatos]);
 
   // If prefill props change while open, update local state
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getSolicitudesEdicion, actualizarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
 import type { ISolicitudEdicion } from '../../../shared/types/solicitudesEdicion';
@@ -76,7 +76,7 @@ const NotificacionesPage = () => {
   const [fCategoria, setFCategoria] = useState<string>(searchParams.get('categoria') || 'Todas');
   const [q, setQ] = useState<string>(searchParams.get('q') || '');
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     if (!jugadorSeleccionado) return;
     try {
       setLoading(true);
@@ -90,15 +90,15 @@ const NotificacionesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fEstado, jugadorSeleccionado?.id]);
 
-  useEffect(() => { void cargar(); }, [fEstado, jugadorSeleccionado?.id]);
+  useEffect(() => { void cargar(); }, [cargar]);
 
   useEffect(() => {
     if (!autoRefresh || !jugadorSeleccionado) return;
     const id = window.setInterval(() => { void cargar(); }, 30000);
     return () => window.clearInterval(id);
-  }, [autoRefresh, fEstado, jugadorSeleccionado?.id]);
+  }, [autoRefresh, cargar, jugadorSeleccionado?.id]);
 
   useEffect(() => {
     const sp = new URLSearchParams();

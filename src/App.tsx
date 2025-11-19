@@ -9,13 +9,14 @@ import NotificacionesPage from './features/notificaciones/pages/NotificacionesPa
 import PerfilPage from './features/perfil/pages/PerfilPage';
 import LoginPage from './features/auth/pages/LoginPage';
 import ProtectedRoute from './app/routes/ProtectedRoute';
-import { useAuth } from './app/providers/AuthContext';
+// auth not required here; routing uses `ProtectedRoute` to guard routes
 import Navbar from './app/layout/Navbar';
+import { FeatureFlagsProvider } from './shared/config/featureFlags';
 
 const App = () => {
-  const { isAuthenticated, logout } = useAuth();
 
   return (
+    <FeatureFlagsProvider>
     <div className="flex min-h-screen flex-col bg-slate-50">
       <Navbar />
 
@@ -97,6 +98,7 @@ const App = () => {
         </div>
       </footer>
     </div>
+    </FeatureFlagsProvider>
   );
 };
 
