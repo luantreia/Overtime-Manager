@@ -1,5 +1,5 @@
-import { crearSolicitudEdicion, getSolicitudesEdicion, actualizarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
-import type { ISolicitudEdicion } from '../../../shared/types/solicitudesEdicion';
+import { crearSolicitudEdicion, getSolicitudesEdicion, actualizarSolicitudEdicion } from '../../../shared/features/solicitudes';
+import type { ISolicitudEdicion } from '../../../shared/utils/types/solicitudesEdicion';
 
 // Funciones para crear solicitudes de JugadorEquipo
 export const solicitarCrearContratoJugadorEquipo = (payload: {

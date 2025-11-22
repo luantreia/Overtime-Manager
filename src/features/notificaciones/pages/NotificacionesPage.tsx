@@ -1,13 +1,23 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getSolicitudesEdicion, actualizarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
-import type { ISolicitudEdicion } from '../../../shared/types/solicitudesEdicion';
-import { useJugador } from '../../../app/providers/JugadorContext';
+import { getSolicitudesEdicion, actualizarSolicitudEdicion, getSolicitudAprobadores } from '../../../shared/features/solicitudes/services/solicitudesEdicionService';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
+import { useAuth } from '../../../app/providers/AuthContext';
+import { useJugador } from '../../../app/providers/JugadorContext';
+import SolicitudEditModalSimple from '../../../shared/features/solicitudes/components/SolicitudEditModalSimple';
+import type { SolicitudEdicion, SolicitudEdicionTipo, SolicitudEdicionEstado } from '../../../shared/features/solicitudes/types/solicitudesEdicion';
 
-const categoriaDeTipo = (tipo: string): string => {
+// Página de notificaciones específica para Manager (con filtro de jugadores)
+
+// Categorías permitidas para Manager: solicitudes de usuario, contratos jugador-equipo y partidos/estadísticas.
+const categoriaDeTipo = (tipo: SolicitudEdicionTipo): string => {
   if (
-    tipo === 'usuario-solicitar-admin-jugador'
+    tipo === 'usuario-crear-jugador' ||
+    tipo === 'usuario-crear-equipo' ||
+    tipo === 'usuario-crear-organizacion' ||
+    tipo === 'usuario-solicitar-admin-jugador' ||
+    tipo === 'usuario-solicitar-admin-equipo' ||
+    tipo === 'usuario-solicitar-admin-organizacion'
   ) return 'Solicitudes de usuarios';
 
   if (
@@ -15,15 +25,6 @@ const categoriaDeTipo = (tipo: string): string => {
     tipo === 'jugador-equipo-eliminar' ||
     tipo === 'jugador-equipo-editar'
   ) return 'Contratos';
-
-  if (
-    tipo === 'participacion-temporada-crear' ||
-    tipo === 'participacion-temporada-actualizar' ||
-    tipo === 'participacion-temporada-eliminar' ||
-    tipo === 'jugador-temporada-crear' ||
-    tipo === 'jugador-temporada-actualizar' ||
-    tipo === 'jugador-temporada-eliminar'
-  ) return 'Participaciones';
 
   if (
     tipo === 'resultadoPartido' ||
@@ -34,120 +35,128 @@ const categoriaDeTipo = (tipo: string): string => {
     tipo === 'estadisticasEquipoSet'
   ) return 'Partidos';
 
-  return 'Otras';
+  return 'NO_PERMITIDO';
 };
 
-const labelTipo = (t: string) => {
-  const map: Partial<Record<string, string>> = {
+const labelTipo = (t: SolicitudEdicionTipo) => {
+  const map: Partial<Record<SolicitudEdicionTipo, string>> = {
+    'usuario-crear-jugador': 'Usuario: Crear jugador',
+    'usuario-crear-equipo': 'Usuario: Crear equipo',
+    'usuario-crear-organizacion': 'Usuario: Crear organización',
     'usuario-solicitar-admin-jugador': 'Usuario: Solicitar admin de jugador',
+    'usuario-solicitar-admin-equipo': 'Usuario: Solicitar admin de equipo',
+    'usuario-solicitar-admin-organizacion': 'Usuario: Solicitar admin de organización',
     'jugador-equipo-crear': 'Contrato: Jugador-Equipo (crear)',
     'jugador-equipo-eliminar': 'Contrato: Jugador-Equipo (eliminar)',
     'jugador-equipo-editar': 'Contrato: Jugador-Equipo (editar)',
-    'participacion-temporada-crear': 'Participación: Temporada (crear)',
-    'participacion-temporada-actualizar': 'Participación: Temporada (actualizar)',
-    'participacion-temporada-eliminar': 'Participación: Temporada (eliminar)',
-    'jugador-temporada-crear': 'Participación: Jugador-Temporada (crear)',
-    'jugador-temporada-actualizar': 'Participación: Jugador-Temporada (actualizar)',
-    'jugador-temporada-eliminar': 'Participación: Jugador-Temporada (eliminar)',
     resultadoPartido: 'Partido: Resultado partido',
     resultadoSet: 'Partido: Resultado set',
     estadisticasJugadorSet: 'Partido: Estadísticas jugador set',
     estadisticasJugadorPartido: 'Partido: Estadísticas jugador partido',
     estadisticasEquipoPartido: 'Partido: Estadísticas equipo partido',
     estadisticasEquipoSet: 'Partido: Estadísticas equipo set',
+    // Tipos excluidos no requieren label amigable aquí
   };
   return map[t] ?? t;
 };
 
-const NotificacionesPage = () => {
-  const { jugadorSeleccionado } = useJugador();
+export default function NotificacionesPage() {
   const { addToast } = useToast();
+  const { user } = useAuth();
+  const { jugadores } = useJugador();
   const [searchParams, setSearchParams] = useSearchParams();
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [solicitudes, setSolicitudes] = useState<ISolicitudEdicion[]>([]);
+  const [solicitudes, setSolicitudes] = useState<SolicitudEdicion[]>([]);
   const [accionando, setAccionando] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [rechazoEdit, setRechazoEdit] = useState<{ id: string; motivo: string } | null>(null);
+  const [openSolicitud, setOpenSolicitud] = useState<null | SolicitudEdicion>(null);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
 
-  const [fEstado, setFEstado] = useState<string>((searchParams.get('estado') as any) || 'pendiente');
-  const [fCategoria, setFCategoria] = useState<string>(searchParams.get('categoria') || 'Todas');
+  // Filtros de UI
+  const [fEstado, setFEstado] = useState<SolicitudEdicionEstado | 'todos'>(
+    (searchParams.get('estado') as SolicitudEdicionEstado) || 'pendiente'
+  );
+  const [fCategoria, setFCategoria] = useState<string>(searchParams.get('categoria') || 'Todas'); // Sólo "Todas", "Solicitudes de usuarios", "Contratos"
   const [q, setQ] = useState<string>(searchParams.get('q') || '');
+  const [fMostrarSoloMias, setFMostrarSoloMias] = useState<boolean>(
+    searchParams.get('soloMias') === 'true'
+  );
+  const [fEntidad, setFEntidad] = useState<string>(searchParams.get('entidad') || 'todas');
 
   const cargar = useCallback(async () => {
-    if (!jugadorSeleccionado) return;
     try {
       setLoading(true);
       setError(null);
+      // Si hay estado distinto a 'todos', consultar ya filtrado en backend
       const params: any = {};
-      if (fEstado && fEstado !== 'todos') params.estado = fEstado;
+      if (fEstado !== 'todos') params.estado = fEstado;
+      if (fEntidad !== 'todas') params.entidad = fEntidad;
+      // Scoping: mine vs related
+      params.scope = fMostrarSoloMias ? 'mine' : 'related';
+
       const data = await getSolicitudesEdicion(params);
-      setSolicitudes(data.solicitudes || []);
+      const allowedTipos = new Set<SolicitudEdicionTipo>([
+        'usuario-crear-jugador','usuario-crear-equipo','usuario-crear-organizacion',
+        'usuario-solicitar-admin-jugador','usuario-solicitar-admin-equipo','usuario-solicitar-admin-organizacion',
+        'jugador-equipo-crear','jugador-equipo-eliminar','jugador-equipo-editar',
+        'resultadoPartido','resultadoSet','estadisticasJugadorSet','estadisticasJugadorPartido','estadisticasEquipoPartido','estadisticasEquipoSet'
+      ]);
+      const filtradas = data.solicitudes.filter(s => allowedTipos.has(s.tipo));
+      setSolicitudes(filtradas.map(s => ({ ...s, id: s._id })));
     } catch (e: any) {
       setError(e?.message || 'Error al cargar solicitudes');
     } finally {
       setLoading(false);
     }
-  }, [fEstado, jugadorSeleccionado?.id]);
+  }, [fEstado, fMostrarSoloMias, fEntidad, user]);
 
   useEffect(() => { void cargar(); }, [cargar]);
 
+  // Auto-refresh cada 30s
   useEffect(() => {
-    if (!autoRefresh || !jugadorSeleccionado) return;
+    if (!autoRefresh) return;
     const id = window.setInterval(() => { void cargar(); }, 30000);
     return () => window.clearInterval(id);
-  }, [autoRefresh, cargar, jugadorSeleccionado?.id]);
+  }, [autoRefresh, cargar]);
 
+  // Sync URL
   useEffect(() => {
     const sp = new URLSearchParams();
     if (fEstado && fEstado !== 'todos') sp.set('estado', fEstado);
     if (fCategoria && fCategoria !== 'Todas') sp.set('categoria', fCategoria);
     if (q) sp.set('q', q);
+    if (fMostrarSoloMias) sp.set('soloMias', 'true');
+    if (fEntidad && fEntidad !== 'todas') sp.set('entidad', fEntidad);
     setSearchParams(sp, { replace: true });
-  }, [fEstado, fCategoria, q, setSearchParams]);
-
-  const perteneceAlJugador = (s: ISolicitudEdicion, jugadorId: string) => {
-    try {
-      // Para solicitudes de edición de contratos, verificar si el jugador está relacionado con el contrato
-      if (s.tipo === 'jugador-equipo-editar' && s.entidad) {
-        // El entidad contiene el ID del contrato, verificar si el contrato pertenece al jugador
-        const dp = (s as any).datosPropuestos || {};
-        return dp.jugadorId === jugadorId || dp.jugador === jugadorId;
-      }
-      
-      // Para otras solicitudes, mantener la lógica original
-      if ((s as any).entidad === jugadorId) return true;
-      const dp = (s as any).datosPropuestos || {};
-      return dp.jugadorId === jugadorId || dp.jugador === jugadorId || JSON.stringify(dp).includes(jugadorId);
-    } catch {
-      return false;
-    }
-  };
+  }, [fEstado, fCategoria, q, fMostrarSoloMias, fEntidad, setSearchParams]);
 
   const filtradas = useMemo(() => {
-    if (!jugadorSeleccionado) return [] as ISolicitudEdicion[];
-    const byJugador = (s: ISolicitudEdicion) => perteneceAlJugador(s, jugadorSeleccionado.id);
-    const byCat = (s: ISolicitudEdicion) => (fCategoria === 'Todas' ? true : categoriaDeTipo((s as any).tipo) === fCategoria);
-    const byQ = (s: ISolicitudEdicion) => {
+    const byCat = (s: SolicitudEdicion) => {
+      const cat = categoriaDeTipo(s.tipo);
+      if (cat === 'NO_PERMITIDO') return false;
+      return fCategoria === 'Todas' ? true : cat === fCategoria;
+    };
+    const byQ = (s: SolicitudEdicion) => {
       if (!q) return true;
-      const txt = `${(s as any).tipo} ${labelTipo((s as any).tipo)} ${JSON.stringify((s as any).datosPropuestos || {})}`.toLowerCase();
+      const txt = `${s.tipo} ${labelTipo(s.tipo)} ${JSON.stringify(s.datosPropuestos || {})}`.toLowerCase();
       return txt.includes(q.toLowerCase());
     };
-    return (solicitudes || []).filter((s) => byJugador(s) && byCat(s) && byQ(s));
-  }, [solicitudes, jugadorSeleccionado?.id, fCategoria, q]);
+    return solicitudes.filter((s) => byCat(s) && byQ(s));
+  }, [solicitudes, fCategoria, q]);
 
+  // Paginación simple en cliente
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filtradas.length / pageSize));
-  useEffect(() => { setPage(1); }, [fCategoria, q, fEstado, jugadorSeleccionado?.id]);
+  useEffect(() => { setPage(1); }, [fCategoria, q, fEstado, fMostrarSoloMias, fEntidad]);
 
-  const manejarAprobar = async (s: ISolicitudEdicion) => {
+  const manejarAprobar = async (s: SolicitudEdicion) => {
     try {
-      setAccionando((s as any)._id);
-      const updated = await actualizarSolicitudEdicion((s as any)._id, { estado: 'aceptado' } as any);
-      setSolicitudes((prev) => prev.map((x) => ((x as any)._id === (s as any)._id ? updated : x)) as any);
+      setAccionando(s._id);
+      const updated = await actualizarSolicitudEdicion(s._id, { estado: 'aceptado' });
+      setSolicitudes((prev) => prev.map((x) => (x._id === s._id ? { ...updated, id: updated._id } : x)));
       addToast({ type: 'success', title: 'Solicitud aprobada' });
     } catch (e: any) {
       addToast({ type: 'error', title: 'Error al aprobar', message: e?.message || 'No se pudo aprobar' });
@@ -156,15 +165,15 @@ const NotificacionesPage = () => {
     }
   };
 
-  const manejarRechazar = async (s: ISolicitudEdicion) => {
-    if (!rechazoEdit || rechazoEdit.id !== (s as any)._id || !rechazoEdit.motivo.trim()) {
+  const manejarRechazar = async (s: SolicitudEdicion) => {
+    if (!rechazoEdit || rechazoEdit.id !== s._id || !rechazoEdit.motivo.trim()) {
       addToast({ type: 'info', title: 'Ingresá un motivo', message: 'Escribí un motivo y confirmá' });
       return;
     }
     try {
-      setAccionando((s as any)._id);
-      const updated = await actualizarSolicitudEdicion((s as any)._id, { estado: 'rechazado', motivoRechazo: rechazoEdit.motivo.trim() } as any);
-      setSolicitudes((prev) => prev.map((x) => ((x as any)._id === (s as any)._id ? updated : x)) as any);
+      setAccionando(s._id);
+      const updated = await actualizarSolicitudEdicion(s._id, { estado: 'rechazado', motivoRechazo: rechazoEdit.motivo.trim() });
+      setSolicitudes((prev) => prev.map((x) => (x._id === s._id ? { ...updated, id: updated._id } : x)));
       setRechazoEdit(null);
       addToast({ type: 'success', title: 'Solicitud rechazada' });
     } catch (e: any) {
@@ -174,15 +183,34 @@ const NotificacionesPage = () => {
     }
   };
 
+  const handleOpenEditar = (s: SolicitudEdicion) => {
+    setOpenSolicitud(s);
+  };
+
+  const handleSaved = (updated: SolicitudEdicion) => {
+    setSolicitudes((prev) => prev.map((x) => (x._id === updated._id ? updated : x)));
+  };
+
+  const categorias = useMemo(() => {
+    const grupos: Record<string, SolicitudEdicion[]> = {};
+    for (const s of filtradas) {
+      const cat = categoriaDeTipo(s.tipo);
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(s);
+    }
+    return grupos;
+  }, [filtradas]);
+
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Notificaciones</h1>
-          <p className="text-sm text-slate-500">Gestioná solicitudes del jugador por categoría.</p>
+          <p className="text-sm text-slate-500">Gestioná todas las solicitudes por categoría.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select value={fEstado} onChange={(e) => setFEstado(e.target.value)} className="rounded-lg border-slate-300 text-sm">
+          <select value={fEstado} onChange={(e) => setFEstado(e.target.value as any)} className="rounded-lg border-slate-300 text-sm">
             <option value="todos">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
             <option value="aceptado">Aceptado</option>
@@ -193,11 +221,31 @@ const NotificacionesPage = () => {
             <option>Todas</option>
             <option>Solicitudes de usuarios</option>
             <option>Contratos</option>
-            <option>Participaciones</option>
             <option>Partidos</option>
-            <option>Otras</option>
           </select>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" className="w-48 rounded-lg border-slate-300 text-sm" />
+          
+          {/* Filtro de Entidad (Jugadores) */}
+          <select 
+            value={fEntidad} 
+            onChange={(e) => setFEntidad(e.target.value)} 
+            className="rounded-lg border-slate-300 text-sm"
+          >
+            <option value="todas">Todos mis jugadores</option>
+            {jugadores.map(j => (
+               <option key={j.id} value={j.id}>{j.nombre}</option>
+            ))}
+          </select>
+
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar…"
+            className="w-48 rounded-lg border-slate-300 text-sm"
+          />
+          <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={fMostrarSoloMias} onChange={(e) => setFMostrarSoloMias(e.target.checked)} />
+            Solo mis solicitudes
+          </label>
           <label className="inline-flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />
             Auto-refresh 30s
@@ -206,21 +254,12 @@ const NotificacionesPage = () => {
         </div>
       </header>
 
-      {!jugadorSeleccionado ? (
-        <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">Seleccioná un jugador para ver sus notificaciones.</p>
-      ) : loading ? (
+      {loading ? (
         <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">Cargando…</div>
       ) : error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
       ) : (
-        (Object.entries(
-          filtradas.reduce((acc: Record<string, ISolicitudEdicion[]>, s: ISolicitudEdicion) => {
-            const cat = categoriaDeTipo((s as any).tipo);
-            if (!acc[cat]) acc[cat] = [];
-            acc[cat].push(s);
-            return acc;
-          }, {}) as Record<string, ISolicitudEdicion[]>
-        ) as [string, ISolicitudEdicion[]][]).map(([cat, items]) => (
+        Object.entries(categorias).map(([cat, items]) => (
           <section key={cat} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-900">{cat}</h2>
@@ -238,34 +277,58 @@ const NotificacionesPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {(items as ISolicitudEdicion[]).slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize).map((s: any) => (
-                    <>
-                      <tr key={s._id} className="border-t border-slate-100">
+                  {items.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize).map((s) => (
+                    <React.Fragment key={s._id}>
+                      <tr className="border-t border-slate-100">
                         <td className="px-3 py-2 font-medium text-slate-900">
                           <button onClick={() => setExpanded((prev) => ({ ...prev, [s._id]: !prev[s._id] }))} className="mr-2 text-brand-600 hover:underline">
                             {expanded[s._id] ? 'Ocultar' : 'Ver'}
                           </button>
                           {labelTipo(s.tipo)}
                         </td>
-                        <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 text-xs ${s.estado === 'pendiente' ? 'bg-amber-100 text-amber-800' : s.estado === 'aceptado' ? 'bg-emerald-100 text-emerald-800' : s.estado === 'rechazado' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}`}>{s.estado}</span></td>
+                        <td className="px-3 py-2">
+                          <span className={`rounded px-2 py-0.5 text-xs ${s.estado === 'pendiente' ? 'bg-amber-100 text-amber-800' : s.estado === 'aceptado' ? 'bg-emerald-100 text-emerald-800' : s.estado === 'rechazado' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}`}>{s.estado}</span>
+                        </td>
                         <td className="px-3 py-2 text-slate-600">{new Date(s.createdAt).toLocaleString()}</td>
                         <td className="px-3 py-2">
                           <div className="flex flex-wrap items-center gap-2">
+                            <AprobarButton solicitud={s} accionando={accionando} onAprobar={() => void manejarAprobar(s)} />
                             <button
-                              disabled={accionando === s._id || s.estado !== 'pendiente'}
-                              onClick={() => void manejarAprobar(s)}
-                              className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-emerald-300"
+                              onClick={() => handleOpenEditar(s)}
+                              className="rounded border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                             >
-                              Aprobar
+                              Editar
                             </button>
                             {rechazoEdit?.id === s._id ? (
                               <>
-                                <input value={rechazoEdit?.motivo ?? ''} onChange={(e) => setRechazoEdit({ id: s._id, motivo: e.target.value })} placeholder="Motivo" className="w-40 rounded border border-slate-300 px-2 py-1 text-xs" />
-                                <button disabled={accionando === s._id || s.estado !== 'pendiente'} onClick={() => void manejarRechazar(s)} className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300">Confirmar</button>
-                                <button onClick={() => setRechazoEdit(null)} className="rounded border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                                <input
+                                  value={rechazoEdit.motivo}
+                                  onChange={(e) => setRechazoEdit({ id: s._id, motivo: e.target.value })}
+                                  placeholder="Motivo"
+                                  className="w-40 rounded border border-slate-300 px-2 py-1 text-xs"
+                                />
+                                <button
+                                  disabled={accionando === s._id || s.estado !== 'pendiente'}
+                                  onClick={() => void manejarRechazar(s)}
+                                  className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
+                                >
+                                  Confirmar
+                                </button>
+                                <button
+                                  onClick={() => setRechazoEdit(null)}
+                                  className="rounded border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                  Cancelar
+                                </button>
                               </>
                             ) : (
-                              <button disabled={accionando === s._id || s.estado !== 'pendiente'} onClick={() => setRechazoEdit({ id: s._id, motivo: '' })} className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300">Rechazar</button>
+                              <button
+                                disabled={accionando === s._id || s.estado !== 'pendiente'}
+                                onClick={() => setRechazoEdit({ id: s._id, motivo: '' })}
+                                className="rounded bg-rose-600 px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-rose-300"
+                              >
+                                Rechazar
+                              </button>
                             )}
                           </div>
                         </td>
@@ -280,12 +343,13 @@ const NotificacionesPage = () => {
                           </td>
                         </tr>
                       ) : null}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
             </div>
 
+            {/* Paginación */}
             <div className="mt-4 flex items-center justify-end gap-2 text-sm">
               <span className="text-slate-500">Página {page} de {totalPages}</span>
               <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="rounded border border-slate-200 px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50">Prev</button>
@@ -294,8 +358,65 @@ const NotificacionesPage = () => {
           </section>
         ))
       )}
-    </div>
+      </div>
+      {openSolicitud ? (
+      <SolicitudEditModalSimple
+        solicitud={openSolicitud}
+        onClose={() => setOpenSolicitud(null)}
+        onSaved={handleSaved}
+      />
+      ) : null}
+    </>
+  );
+}
+
+// Componente de aprobación con verificación dinámica de aprobadores
+interface AprobarButtonProps {
+  solicitud: SolicitudEdicion;
+  accionando: string | null;
+  onAprobar: () => void;
+}
+
+const AprobarButton: React.FC<AprobarButtonProps> = ({ solicitud, accionando, onAprobar }) => {
+  const { addToast } = useToast();
+  const [puedeAprobar, setPuedeAprobar] = React.useState<boolean | null>(null);
+  const [loadingAprobadores, setLoadingAprobadores] = React.useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const cargar = async () => {
+      setLoadingAprobadores(true);
+      try {
+        const res = await getSolicitudAprobadores(solicitud._id);
+        if (mounted) setPuedeAprobar(res.puedeAprobar);
+      } catch (e: any) {
+        if (mounted) setPuedeAprobar(false);
+      } finally {
+        if (mounted) setLoadingAprobadores(false);
+      }
+    };
+    if (solicitud.estado === 'pendiente') void cargar();
+    return () => { mounted = false; };
+  }, [solicitud._id, solicitud.estado]);
+
+  const handleClick = () => {
+    if (!puedeAprobar) {
+      addToast({ type: 'info', title: 'No autorizado', message: 'No estás habilitado para aprobar esta solicitud.' });
+      return;
+    }
+    onAprobar();
+  };
+
+  return (
+    <button
+      disabled={accionando === solicitud._id || solicitud.estado !== 'pendiente' || loadingAprobadores}
+      onClick={handleClick}
+      className={`rounded px-3 py-1 text-xs font-semibold text-white disabled:cursor-not-allowed ${
+        puedeAprobar === false ? 'bg-slate-400' : 'bg-emerald-600 hover:bg-emerald-700'
+      }`}
+      title={puedeAprobar === false ? 'No podes aprobar' : 'Aprobar solicitud'}
+    >
+      {loadingAprobadores ? '...' : 'Aprobar'}
+    </button>
   );
 };
-
-export default NotificacionesPage;

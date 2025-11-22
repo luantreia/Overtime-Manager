@@ -7,7 +7,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './app/providers/AuthContext';
 import { JugadorProvider } from './app/providers/JugadorContext';
 import { ToastProvider } from './shared/components/Toast/ToastProvider';
-import { SolicitudesProvider } from './app/providers/SolicitudesContext';
+import { SolicitudesProvider } from './shared/features/solicitudes/context/SolicitudesContext';
 
 const container = document.getElementById('root');
 

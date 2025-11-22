@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useSolicitudes } from '../../features/solicitudes';
+import { useSolicitudes } from '../context/SolicitudesContext';
 
 interface SolicitudNotificationProps {
   onClick?: () => void;

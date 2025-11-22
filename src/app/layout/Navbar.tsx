@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../providers/AuthContext';
 import PlayerSelector from '../../features/jugadores/components/PlayerSelector';
-import { getSolicitudesEdicion } from '../../features/solicitudes/services/solicitudesEdicionService';
+import { getSolicitudesEdicion } from '../../shared/features/solicitudes';
 import { useJugador } from '../providers/JugadorContext';
 // removed feature flag usage
 

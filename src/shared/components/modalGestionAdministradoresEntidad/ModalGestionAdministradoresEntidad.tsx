@@ -34,6 +34,9 @@ const ModalGestionAdministradoresEntidad = ({ isOpen, onClose, entityId, title =
     try {
       const data = await getFunction(entityId);
       setAdmins(data.administradores || []);
+    } catch (error) {
+      console.error('Error loading admins:', error);
+      setAdmins([]);
     } finally {
       setLoading(false);
     }

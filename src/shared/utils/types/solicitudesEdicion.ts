@@ -12,6 +12,7 @@ export type SolicitudEdicionTipo =
   | 'jugador-equipo-editar'
   | 'jugador-equipo-crear'
   | 'jugador-equipo-eliminar'
+  | 'contratoEquipoCompetencia'
   | 'participacion-temporada-crear'
   | 'participacion-temporada-actualizar'
   | 'participacion-temporada-eliminar'
@@ -268,4 +269,13 @@ export interface ISolicitudesPaginadas {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface ISolicitudAprobadores {
+  aprobadores: {
+    administradores: string[];
+    organizacion: string[];
+    global: string[];
+  };
+  puedeAprobar: boolean;
 }

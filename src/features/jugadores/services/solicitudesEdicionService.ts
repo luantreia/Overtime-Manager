@@ -1,84 +1,48 @@
-import { authFetch } from '../../../shared/utils/authFetch';
-import type { SolicitudEdicion } from '../../../types';
+// Wrapper especializado para el módulo de jugadores que reutiliza los servicios compartidos.
+// Limita los tipos visibles y aplica scope=related para reducir la exposición.
 
+import {
+  getSolicitudesEdicion as getSolicitudesEdicionShared,
+  crearSolicitudEdicion as crearSolicitudShared,
+  actualizarSolicitudEdicion as actualizarSolicitudShared,
+  cancelarSolicitudEdicion as cancelarSolicitudShared,
+  getSolicitudAprobadores as getSolicitudAprobadoresShared,
+} from '../../../shared/features/solicitudes/services/solicitudesEdicionService';
+import type {
+  ISolicitudEdicion,
+  ISolicitudesPaginadas,
+  ISolicitudCrearPayload,
+  ISolicitudActualizarPayload,
+  ISolicitudAprobadores,
+} from '../../../shared/features/solicitudes/types/solicitudesEdicion';
 
-type CrearSolicitudPayload = {
-  tipo: SolicitudEdicion['tipo'];
-  entidad: string | null;
-  datosPropuestos: Record<string, unknown>;
+const TIPOS_JUGADOR_MANAGER = [
+  'jugador-equipo-crear',
+  'jugador-equipo-eliminar',
+  'jugador-equipo-editar',
+] as const;
+
+export const obtenerSolicitudesEdicion = async (page = 1, limit = 10): Promise<ISolicitudEdicion[]> => {
+  const resp: ISolicitudesPaginadas = await getSolicitudesEdicionShared({ page, limit, scope: 'related' });
+  return resp.solicitudes.filter(s => TIPOS_JUGADOR_MANAGER.includes(s.tipo as any));
 };
 
-// Tipos específicos para JugadorEquipo
-export type SolicitudCrearJugadorEquipo = {
-  tipo: 'jugador-equipo-crear';
-  entidad: null;
-  datosPropuestos: {
-    jugadorId: string;
-    equipoId: string;
-    rol?: string;
-    numeroCamiseta?: number;
-    fechaInicio?: string;
-    fechaFin?: string;
-  };
+export const crearSolicitudEdicion = async (payload: ISolicitudCrearPayload): Promise<ISolicitudEdicion> => {
+  return crearSolicitudShared(payload);
 };
 
-export type SolicitudEliminarJugadorEquipo = {
-  tipo: 'jugador-equipo-eliminar';
-  entidad: null;
-  datosPropuestos: {
-    contratoId: string;
-  };
+export const actualizarSolicitudEdicion = async (id: string, payload: ISolicitudActualizarPayload): Promise<ISolicitudEdicion> => {
+  return actualizarSolicitudShared(id, payload);
 };
 
-// Shape que devuelve el backend
-type BackendSolicitud = {
-  _id: string;
-  tipo: SolicitudEdicion['tipo'] | string;
-  entidad?: string | null;
-  datosPropuestos: Record<string, unknown>;
-  estado: string;
-  creadoPor: string;
-  createdAt?: string;
-  updatedAt?: string;
+export const cancelarSolicitudEdicion = async (id: string): Promise<{ message: string }> => {
+  return cancelarSolicitudShared(id);
 };
 
-const mapSolicitud = (s: BackendSolicitud): SolicitudEdicion => ({
-  _id: s._id,
-  id: s._id,
-  tipo: s.tipo as SolicitudEdicion['tipo'],
-  entidad: s.entidad ?? null,
-  datosPropuestos: s.datosPropuestos,
-  estado: s.estado as SolicitudEdicion['estado'],
-  aceptadoPor: [],
-  requiereDobleConfirmacion: false,
-  creadoPor: s.creadoPor,
-  createdAt: s.createdAt ?? '',
-  updatedAt: s.updatedAt ?? '',
-});
-
-export const crearSolicitudEdicion = (payload: CrearSolicitudPayload) =>
-  authFetch<BackendSolicitud>('/solicitudes-edicion', {
-    method: 'POST',
-    body: payload,
-  }).then(mapSolicitud);
-
-export const obtenerSolicitudesEdicion = (filtros?: { tipo?: string; estado?: string; creadoPor?: string; entidad?: string }) => {
-  const params = new URLSearchParams();
-  if (filtros?.tipo) params.set('tipo', filtros.tipo);
-  if (filtros?.estado) params.set('estado', filtros.estado);
-  if (filtros?.creadoPor) params.set('creadoPor', filtros.creadoPor);
-  if (filtros?.entidad) params.set('entidad', filtros.entidad);
-
-  return authFetch<BackendSolicitud[]>(`/solicitudes-edicion?${params.toString()}`).then((arr) => arr.map(mapSolicitud));
+export const getSolicitudAprobadores = async (id: string): Promise<ISolicitudAprobadores> => {
+  return getSolicitudAprobadoresShared(id);
 };
 
-export const actualizarSolicitudEdicion = (id: string, payload: { estado: string; motivoRechazo?: string }) =>
-  authFetch<BackendSolicitud>(`/solicitudes-edicion/${id}`, {
-    method: 'PUT',
-    body: payload,
-  }).then(mapSolicitud);
-
-export const cancelarSolicitudEdicion = (id: string) =>
-  authFetch<{ message: string }>(`/solicitudes-edicion/${id}`, {
-    method: 'DELETE',
-  });
+// Exportar alias para compatibilidad con código existente
+export const crearSolicitud = crearSolicitudEdicion;
+export const actualizarSolicitud = actualizarSolicitudEdicion;

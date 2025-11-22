@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { getSolicitudesEdicion, actualizarSolicitudEdicion, cancelarSolicitudEdicion } from '../../solicitudes/services/solicitudesEdicionService';
+import { getSolicitudesEdicion, actualizarSolicitudEdicion, cancelarSolicitudEdicion } from '../../../shared/features/solicitudes';
 import { getEquipo } from '../../equipo/services/equipoService';
 import { getUsuarioById, getAdminsEquipo } from '../../auth/services/usersService';
 import type { Usuario } from '../../../types';
-import type { ISolicitudEdicion } from '../../../shared/types/solicitudesEdicion';
+import type { ISolicitudEdicion } from '../../../shared/features/solicitudes/types/solicitudesEdicion';
 import { useAuth } from '../../../app/providers/AuthContext';
 import { getRelacionesPorJugadorRaw } from '../services/jugadorEquipoService';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';

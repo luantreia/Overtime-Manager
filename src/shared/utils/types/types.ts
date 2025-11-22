@@ -1,3 +1,12 @@
+// =====================================================================================
+// TYPES CONSOLIDADOS - overtime-gestion-manager
+// Ubicación: shared/utils/types/types.ts
+// =====================================================================================
+
+// ========================================
+// TIPOS GENERALES DE USUARIO Y ENTIDADES
+// ========================================
+
 export type RolUsuario = 'lector' | 'editor' | 'admin';
 
 export interface Usuario {
@@ -13,6 +22,10 @@ export interface AdminUser {
   email?: string;
 }
 
+// ========================================
+// TIPOS DE EQUIPOS
+// ========================================
+
 export interface Equipo {
   id: string;
   nombre: string;
@@ -20,6 +33,10 @@ export interface Equipo {
   staff?: string[];
   descripcion?: string;
 }
+
+// ========================================
+// TIPOS DE JUGADORES
+// ========================================
 
 export type EstadoJugador = 'activo' | 'pendiente' | 'baja';
 
@@ -42,6 +59,10 @@ export interface Jugador {
   foto?: string;
   nacionalidad?: string;
 }
+
+// ========================================
+// TIPOS DE SOLICITUDES DE JUGADORES
+// ========================================
 
 export interface SolicitudJugador {
   id: string;
@@ -67,6 +88,10 @@ export interface ContratoJugadorResumen {
   fechaSolicitud?: string;
   fechaAceptacion?: string;
 }
+
+// ========================================
+// TIPOS DE COMPETENCIAS Y TEMPORADAS
+// ========================================
 
 export interface Competencia {
   id: string;
@@ -104,6 +129,10 @@ export interface EquipoCompetencia {
   fixtureUrl?: string;
 }
 
+// ========================================
+// TIPOS DE PARTIDOS
+// ========================================
+
 export type EstadoPartido = 'pendiente' | 'confirmado' | 'finalizado' | 'cancelado';
 
 export interface Partido {
@@ -138,6 +167,10 @@ export interface SolicitudCompetencia {
   fechaSolicitud: string;
 }
 
+// ========================================
+// TIPOS DE ESTADÍSTICAS
+// ========================================
+
 export interface EstadisticaJugador {
   jugador: Jugador;
   partidosJugados: number;
@@ -170,6 +203,3 @@ export interface Notificacion {
   leida: boolean;
   relacionadoId?: string;
 }
-// Note: SolicitudEdicion-related types are defined in
-// `src/shared/types/solicitudesEdicion.ts`. Keeping domain-specific
-// solicitud types there avoids duplication and name collisions.

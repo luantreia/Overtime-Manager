@@ -123,41 +123,40 @@ const PlayerProfilePage: React.FC = () => {
 
   const loadAdminUsers = useCallback(async () => {
     if (!jugador?.administradores) return;
-    
-    // Get current admin users for the cache
-    const currentAdminUsers = new Map(adminUsers);
-    
-    // Only fetch users that aren't already in the cache
-    const usersToFetch = jugador.administradores.filter((id: string) => !currentAdminUsers.has(id));
-    
-    if (usersToFetch.length === 0) return;
-    
-    try {
-      const fetchedUsers = await Promise.all(
-        usersToFetch.map((id: string) => 
+
+    // Use functional update to get current admin users for the cache
+    setAdminUsers(currentAdminUsers => {
+      // Only fetch users that aren't already in the cache
+      const usersToFetch = (jugador.administradores || []).filter((id: string) => !currentAdminUsers.has(id));
+
+      if (usersToFetch.length === 0) return currentAdminUsers;
+
+      // Fetch the missing users
+      Promise.all(
+        usersToFetch.map((id: string) =>
           getUsuarioById(id)
             .then(user => ({ user, id }))
-            .catch(() => ({ 
-              user: { id, nombre: id, email: 'Usuario no encontrado' } as Usuario, 
-              id 
+            .catch(() => ({
+              user: { id, nombre: id, email: 'Usuario no encontrado', rol: 'lector' } as Usuario,
+              id
             }))
         )
-      );
-      
-      // Update the state with new users
-      setAdminUsers(prev => {
-        const newMap = new Map(prev);
-        fetchedUsers.forEach(({ user }) => {
-          newMap.set(user.id, user);
+      ).then(fetchedUsers => {
+        // Update the state with new users
+        setAdminUsers(prev => {
+          const newMap = new Map(prev);
+          fetchedUsers.forEach(({ user }) => {
+            newMap.set(user.id, user);
+          });
+          return newMap;
         });
-        return newMap;
+      }).catch(error => {
+        console.error('Error loading admin users:', error);
       });
-    } catch (error) {
-      console.error('Error loading admin users:', error);
-    }
-  }, [jugador?.administradores, adminUsers]);
 
-  useEffect(() => {
+      return currentAdminUsers; // Return current state while fetching
+    });
+  }, [jugador?.administradores]);  useEffect(() => {
     if (jugador?.administradores && jugador.administradores.length > 0) {
       loadAdminUsers();
     } else {
@@ -258,44 +257,41 @@ const PlayerProfilePage: React.FC = () => {
     addToast({ type: 'success', title: 'Agregado', message: 'Administrador agregado' });
   };
 
-  const getAdminsFunction = async (entityId: string) => {
-    if (!jugador?.administradores) return { administradores: [] };
-    
-    // Ensure all admin users are loaded
-    const usersToFetch = jugador.administradores.filter((id: string) => !adminUsers.has(id));
-    if (usersToFetch.length > 0) {
-      try {
-        const fetchedUsers = await Promise.all(
-          usersToFetch.map((id: string) => 
-            getUsuarioById(id)
-              .then(user => ({ user, id }))
-              .catch(() => ({ 
-                user: { id, nombre: id, email: 'Usuario no encontrado' } as Usuario, 
-                id 
-              }))
-          )
-        );
-        setAdminUsers(prev => {
-          const newMap = new Map(prev);
-          fetchedUsers.forEach(({ user }) => {
-            newMap.set(user.id, user);
-          });
-          return newMap;
-        });
-      } catch (error) {
-        console.error('Error loading admin users:', error);
-      }
-    }
-    
-    return {
-      administradores: (jugador.administradores.map((id: string) => {
-        const user = adminUsers.get(id);
-        return { _id: id, nombre: user?.nombre, email: user?.email };
-      }))
-    };
-  };
+    const getAdminsFunction = useCallback(async (entityId: string) => {
+    try {
+      // Get fresh admin IDs directly from backend
+      const adminIds = await getAdminsJugador(entityId);
 
-  const removeAdminFunction = async (entityId: string, adminId: string) => {
+      if (!adminIds || adminIds.length === 0) {
+        return { administradores: [] };
+      }
+
+      // Load user details for all admins
+      const userPromises = adminIds.map(async (id: string) => {
+        try {
+          const user = await getUsuarioById(id);
+          return {
+            _id: id,
+            nombre: user.nombre || 'Sin nombre',
+            email: user.email || 'Sin email'
+          };
+        } catch (error) {
+          return {
+            _id: id,
+            nombre: 'Usuario no encontrado',
+            email: 'N/A'
+          };
+        }
+      });
+
+      const administradores = await Promise.all(userPromises);
+      return { administradores };
+
+    } catch (error) {
+      console.error('Error in getAdminsFunction:', error);
+      return { administradores: [] };
+    }
+  }, []);  const removeAdminFunction = async (entityId: string, adminId: string) => {
     await quitarAdminJugador(entityId, adminId);
     await refreshAdmins();
     addToast({ type: 'success', title: 'Quitado', message: 'Administrador removido' });

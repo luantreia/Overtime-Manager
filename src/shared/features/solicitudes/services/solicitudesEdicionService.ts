@@ -1,19 +1,20 @@
-import { authFetch } from '../../../shared/utils/authFetch';
-import type { 
-  ISolicitudEdicion, 
-  ISolicitudOpciones, 
-  ISolicitudContexto, 
-  ISolicitudFiltros, 
-  ISolicitudCrearPayload, 
+import { authFetch } from '../../../../shared/utils/authFetch';
+import type {
+  ISolicitudEdicion,
+  ISolicitudOpciones,
+  ISolicitudContexto,
+  ISolicitudFiltros,
+  ISolicitudCrearPayload,
   ISolicitudActualizarPayload,
   ISolicitudesPaginadas,
+  ISolicitudAprobadores,
   SolicitudEdicionTipo
-} from '../../../shared/types/solicitudesEdicion';
-import { 
+} from '../types/solicitudesEdicion';
+import {
   SolicitudValidationError,
   SolicitudPermissionError,
   SolicitudBusinessError
-} from '../../../shared/types/solicitudesEdicion';
+} from '../types/solicitudesEdicion';
 
 /**
  * Obtiene todas las solicitudes de edición con filtros opcionales
@@ -24,25 +25,18 @@ export const getSolicitudesEdicion = async (
   filtros: ISolicitudFiltros = {}
 ): Promise<ISolicitudesPaginadas> => {
   const params = new URLSearchParams();
-  
+
   if (filtros.tipo) params.set('tipo', filtros.tipo);
   if (filtros.estado) params.set('estado', filtros.estado);
   if (filtros.creadoPor) params.set('creadoPor', filtros.creadoPor);
   if (filtros.entidad) params.set('entidad', filtros.entidad);
   if (filtros.page) params.set('page', filtros.page.toString());
   if (filtros.limit) params.set('limit', filtros.limit.toString());
+  if ((filtros as any).scope) params.set('scope', (filtros as any).scope);
 
   try {
-    const arr = await authFetch<ISolicitudEdicion[]>(`/solicitudes-edicion?${params.toString()}`);
-    const page = filtros.page ?? 1;
-    const limit = filtros.limit ?? arr.length;
-    return {
-      solicitudes: Array.isArray(arr) ? arr : [],
-      total: Array.isArray(arr) ? arr.length : 0,
-      page,
-      limit,
-      totalPages: 1,
-    };
+    const response = await authFetch<ISolicitudesPaginadas>(`/solicitudes-edicion?${params.toString()}`);
+    return response;
   } catch (error: any) {
     if (error.status === 400) {
       throw new SolicitudValidationError(error.message, error.details);
@@ -202,17 +196,17 @@ export const puedeCrearSolicitud = async (
  * @returns Lista de solicitudes pendientes
  */
 export const getSolicitudesPendientes = async (
-  filtro: { 
-    tipo?: SolicitudEdicionTipo; 
-    entidad?: string; 
-    creadoPor?: string; 
+  filtro: {
+    tipo?: SolicitudEdicionTipo;
+    entidad?: string;
+    creadoPor?: string;
   } = {}
 ): Promise<ISolicitudEdicion[]> => {
   const filtros: ISolicitudFiltros = {
     ...filtro,
     estado: 'pendiente',
   };
-  
+
   const response = await getSolicitudesEdicion(filtros);
   return response.solicitudes;
 };
@@ -223,10 +217,10 @@ export const getSolicitudesPendientes = async (
  * @returns Número de solicitudes pendientes
  */
 export const contarSolicitudesPendientes = async (
-  filtro: { 
-    tipo?: SolicitudEdicionTipo; 
-    entidad?: string; 
-    creadoPor?: string; 
+  filtro: {
+    tipo?: SolicitudEdicionTipo;
+    entidad?: string;
+    creadoPor?: string;
   } = {}
 ): Promise<number> => {
   const filtros: ISolicitudFiltros = {
@@ -247,10 +241,10 @@ export const contarSolicitudesPendientes = async (
  * @returns Estadísticas de solicitudes
  */
 export const getSolicitudesEstadisticas = async (
-  filtro: { 
-    tipo?: string; 
-    entidad?: string; 
-    creadoPor?: string; 
+  filtro: {
+    tipo?: string;
+    entidad?: string;
+    creadoPor?: string;
   } = {}
 ): Promise<{
   total: number;
@@ -278,3 +272,25 @@ export const getSolicitudesEstadisticas = async (
     throw new Error(`Error al obtener estadísticas de solicitudes: ${error.message}`);
   }
 };
+
+/**
+ * Obtiene los usuarios que pueden aprobar una solicitud específica
+ * @param id ID de la solicitud
+ * @returns Lista de aprobadores agrupados por tipo
+ */
+export const getSolicitudAprobadores = async (id: string): Promise<ISolicitudAprobadores> => {
+  try {
+    return await authFetch<ISolicitudAprobadores>(`/solicitudes-edicion/${id}/aprobadores`);
+  } catch (error: any) {
+    if (error.status === 404) {
+      throw new Error('Solicitud no encontrada');
+    }
+    throw new Error(`Error al obtener aprobadores: ${error.message}`);
+  }
+};
+
+/**
+ * Alias para compatibilidad con código existente
+ * @deprecated Use actualizarSolicitudEdicion instead
+ */
+export const actualizarSolicitud = actualizarSolicitudEdicion;
