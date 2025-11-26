@@ -10,6 +10,8 @@ import {
   type JugadorPartidoResumen,
   type EstadisticaManualJugador,
 } from '../../../estadisticas/services/estadisticasService';
+import { useToast } from '../../../../shared/components/Toast/ToastProvider';
+import { crearSolicitudEdicion } from '../../../../shared/features/solicitudes/services/solicitudesEdicionService';
 
 // (Asignación de jugadores se gestiona en ModalAlineacionPartido)
 
@@ -34,6 +36,7 @@ const ModalEstadisticasGeneralesCaptura: React.FC<ModalEstadisticasGeneralesCapt
   hayDatosAutomaticos, // eslint-disable-line @typescript-eslint/no-unused-vars
   onAbrirAlineacion, // eslint-disable-line @typescript-eslint/no-unused-vars
 }) => {
+  const { addToast } = useToast();
   const [jugadores, setJugadores] = useState<JugadorPartidoResumen[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [guardando, setGuardando] = useState<boolean>(false);
@@ -106,28 +109,36 @@ const ModalEstadisticasGeneralesCaptura: React.FC<ModalEstadisticasGeneralesCapt
   const guardar = async (): Promise<void> => {
     setGuardando(true);
     try {
-      const tareas: Array<Promise<unknown>> = [];
-      jugadores.forEach((j) => {
+      // Manager SIEMPRE crea solicitud
+      const estadisticas = jugadores.map((j) => {
         const jpId = j._id;
         const stats = statsByJp[jpId];
-        if (!stats) return;
-        const payload = {
+        if (!stats) return null;
+        return {
           jugadorPartido: jpId,
           throws: stats.throws ?? 0,
           hits: stats.hits ?? 0,
           outs: stats.outs ?? 0,
           catches: stats.catches ?? 0,
           tipoCaptura: 'manual',
-        } as const;
-        if (stats._id) {
-          tareas.push(actualizarEstadisticaManualJugadorPartido(stats._id, payload));
-        } else {
-          tareas.push(guardarEstadisticaManualJugadorPartido(payload));
-        }
+          statId: stats._id, // Optional, if updating existing
+        };
+      }).filter(Boolean);
+
+      await crearSolicitudEdicion({
+        tipo: 'estadisticasJugadorPartido',
+        entidad: partidoId,
+        datosPropuestos: {
+          estadisticas,
+        },
       });
-      await Promise.all(tareas);
+
+      addToast({ type: 'success', title: 'Solicitud enviada', message: 'Se solicitó la actualización de estadísticas' });
       await Promise.resolve(onRefresh?.());
       onClose();
+    } catch (err) {
+      console.error(err);
+      addToast({ type: 'error', title: 'Error', message: 'No pudimos enviar la solicitud' });
     } finally {
       setGuardando(false);
     }

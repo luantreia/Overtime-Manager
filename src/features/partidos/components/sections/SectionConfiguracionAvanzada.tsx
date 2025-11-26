@@ -5,12 +5,14 @@ type ConfiguracionAvanzadaSectionProps = {
   partido: PartidoDetallado;
   onCambiarModoVisualizacion: (modo: 'automatico' | 'manual') => void;
   onEliminarPartido: () => void;
+  readOnly?: boolean;
 };
 
 export const ConfiguracionAvanzadaSection: React.FC<ConfiguracionAvanzadaSectionProps> = ({
   partido,
   onCambiarModoVisualizacion,
   onEliminarPartido,
+  readOnly = false,
 }) => {
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -40,7 +42,8 @@ export const ConfiguracionAvanzadaSection: React.FC<ConfiguracionAvanzadaSection
               <select
                 value={(partido.modoVisualizacion as 'automatico' | 'manual') || 'automatico'}
                 onChange={(e) => onCambiarModoVisualizacion(e.target.value as 'automatico' | 'manual')}
-                className="px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                disabled={readOnly}
+                className={`px-3 py-2 text-sm border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <option value="automatico">📊 Estadísticas por Set (calculadas)</option>
                 <option value="manual">✏️ Estadísticas Totales (ingresadas)</option>
@@ -57,7 +60,8 @@ export const ConfiguracionAvanzadaSection: React.FC<ConfiguracionAvanzadaSection
             <div className="flex gap-3">
               <button
                 onClick={onEliminarPartido}
-                className="px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+                disabled={readOnly}
+                className={`px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors flex items-center gap-2 ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="Eliminar este partido permanentemente"
               >
                 🗑️ Eliminar Partido
