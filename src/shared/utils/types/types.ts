@@ -135,6 +135,15 @@ export interface EquipoCompetencia {
 
 export type EstadoPartido = 'pendiente' | 'confirmado' | 'finalizado' | 'cancelado';
 
+export interface SetPartido {
+  _id: string;
+  numeroSet: number;
+  estadoSet: string;
+  ganadorSet: string;
+  marcadorLocal?: number;
+  marcadorVisitante?: number;
+}
+
 export interface Partido {
   id: string;
   fecha: string;
@@ -147,6 +156,7 @@ export interface Partido {
     puntosEquipo: number;
     puntosRival: number;
   };
+  sets?: SetPartido[];
 }
 
 export interface JugadorPartido {
