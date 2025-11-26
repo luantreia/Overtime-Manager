@@ -6,6 +6,7 @@ import { formatDate } from '../../../shared/utils/formatDate';
 import { formatNumber } from '../../../shared/utils/formatNumber';
 import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
+import ModalSolicitudEstadisticas from '../components/ModalSolicitudEstadisticas';
 
 
 
@@ -24,6 +25,7 @@ const EstadisticasPage = () => {
     { fecha: string; resultado: 'W' | 'D' | 'L'; puntosAnotados: number; puntosRecibidos: number }[]
   >([]);
   const [loading, setLoading] = useState(false);
+  const [modalAbierto, setModalAbierto] = useState(false);
   useEffect(() => {
     const jugadorId = jugadorSeleccionado?.id;
     if (!jugadorId) {
@@ -110,7 +112,16 @@ const EstadisticasPage = () => {
     <div className="space-y-10">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold text-slate-900">Estadísticas del jugador</h1>
-        <p className="text-sm text-slate-500">Resumen de rendimiento y métricas del jugador seleccionado.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">Resumen de rendimiento y métricas del jugador seleccionado.</p>
+          <button
+            type="button"
+            onClick={() => setModalAbierto(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+          >
+            📝 Solicitar registro
+          </button>
+        </div>
       </header>
 
       {loading ? <p className="text-sm text-slate-500">Cargando estadísticas…</p> : null}
@@ -198,6 +209,13 @@ const EstadisticasPage = () => {
           ) : null}
         </div>
       </section>
+
+      <ModalSolicitudEstadisticas
+        isOpen={modalAbierto}
+        jugadorId={jugadorSeleccionado?.id || ''}
+        jugadorNombre={jugadorSeleccionado?.nombre}
+        onClose={() => setModalAbierto(false)}
+      />
     </div>
   );
 };
