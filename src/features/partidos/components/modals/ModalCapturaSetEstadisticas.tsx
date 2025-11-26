@@ -13,6 +13,7 @@ import {
   crearEstadisticaJugadorSet,
   actualizarEstadisticaJugadorSet,
 } from '../../services/partidoService';
+import { crearSolicitudEdicion } from '../../../../shared/features/solicitudes/services/solicitudesEdicionService';
 
 type ModalCapturaSetEstadisticasProps = {
   partido: PartidoDetallado | null;
@@ -233,54 +234,47 @@ const ModalCapturaSetEstadisticas = ({
       if (!setId) return;
       const localId = extractEquipoId(partido?.equipoLocal) ?? '';
       const visitId = extractEquipoId(partido?.equipoVisitante) ?? '';
-      const process = async (rows: Row[], equipoId: string) => {
-        for (const r of rows) {
-          if (!r?.jugadorId || !r?.jugadorPartidoId) continue;
-          const existingId = r.statId || mapJpToStatId[r.jugadorPartidoId];
-          if (existingId) {
-            await actualizarEstadisticaJugadorSet(existingId, r.estadisticas);
-          } else {
-            // Doble chequeo: consultar existencia por (set, jugadorPartido) para evitar E11000
-            const existentes = await obtenerEstadisticasJugadorSet({ set: setId, jugadorPartido: r.jugadorPartidoId });
-            const yaExiste = Array.isArray(existentes) && existentes.length > 0 ? existentes[0] : null;
-            if (yaExiste?._id) {
-              await actualizarEstadisticaJugadorSet(yaExiste._id, r.estadisticas);
-              setMapJpToStatId((prev) => ({ ...prev, [r.jugadorPartidoId as string]: yaExiste!._id }));
-            } else {
-              const creado = await crearEstadisticaJugadorSet({
-                set: setId,
-                jugadorPartido: r.jugadorPartidoId,
-                jugador: r.jugadorId,
-                equipo: equipoId,
-                ...r.estadisticas,
-              });
-              if (creado && creado._id) {
-                setMapJpToStatId((prev) => ({ ...prev, [r.jugadorPartidoId as string]: creado._id }));
-              }
-            }
-          }
+
+      // En Manager SIEMPRE se crea solicitud para estadísticas
+      const estadisticasLocal = rowsLocal
+        .filter(r => r.jugadorId && r.jugadorPartidoId)
+        .map(r => ({
+          jugadorId: r.jugadorId,
+          jugadorPartidoId: r.jugadorPartidoId,
+          estadisticas: r.estadisticas
+        }));
+
+      const estadisticasVisitante = rowsVisitante
+        .filter(r => r.jugadorId && r.jugadorPartidoId)
+        .map(r => ({
+          jugadorId: r.jugadorId,
+          jugadorPartidoId: r.jugadorPartidoId,
+          estadisticas: r.estadisticas
+        }));
+
+      await crearSolicitudEdicion({
+        tipo: 'estadisticasJugadorSet',
+        entidad: partidoId,
+        datosPropuestos: {
+          setId,
+          numeroSet: numeroSetSeleccionado,
+          localId,
+          visitId,
+          estadisticasLocal,
+          estadisticasVisitante
         }
-      };
-      await process(rowsLocal, localId);
-      await process(rowsVisitante, visitId);
-      addToast({ type: 'success', title: 'Guardado', message: 'Estadísticas del set guardadas' });
-      await Promise.resolve(onRefresh?.());
-      // refrescar stats para obtener ids creados
-      const data = await obtenerEstadisticasJugadorSet({ set: setId });
-      const byEquipo = (equipoId: string) => data.filter((d) => d.equipo === equipoId);
-      const rebuild = (arr: Row[], equipoId: string) => arr.map((r) => {
-        const found = byEquipo(equipoId).find((d) => d.jugadorPartido === r.jugadorPartidoId);
-        return found ? { ...r, statId: found._id } : r;
       });
-      setRowsLocal((prev) => rebuild(prev, localId));
-      setRowsVisitante((prev) => rebuild(prev, visitId));
+      
+      addToast({ type: 'success', title: 'Solicitud enviada', message: 'Se solicitó la actualización de estadísticas' });
+      onClose();
+      
     } catch (err) {
       console.error(err);
-      addToast({ type: 'error', title: 'Error', message: 'No pudimos guardar las estadísticas' });
+      addToast({ type: 'error', title: 'Error', message: 'No pudimos enviar la solicitud' });
     } finally {
       setGuardando(false);
     }
-  }, [addToast, numeroSetSeleccionado, onRefresh, partido?.equipoLocal, partido?.equipoVisitante, rowsLocal, rowsVisitante, sets, mapJpToStatId]);
+  }, [addToast, numeroSetSeleccionado, partidoId, partido?.equipoLocal, partido?.equipoVisitante, rowsLocal, rowsVisitante, sets, onClose]);
 
   return (
     <ModalBase isOpen={isOpen} onClose={onClose} bodyClassName="p-0" size="xl" title="Captura de estadísticas por set">

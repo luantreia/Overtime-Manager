@@ -290,7 +290,8 @@ export const ModalPartidoAdmin = ({ partidoId, token, onClose, onPartidoEliminad
             <SeccionEstadisticasSetASet
               partido={partido}
               onAbrirCaptura={abrirCapturaSet}
-              onAbrirGestionSets={() => setGestionSetsAbierta(true)}
+              // En manager no permitimos gestionar sets directamente, solo verlos y capturar stats
+              onAbrirGestionSets={undefined}
             />
           )}
 
@@ -311,6 +312,7 @@ export const ModalPartidoAdmin = ({ partidoId, token, onClose, onPartidoEliminad
           partido={partido}
           onCambiarModoVisualizacion={handleCambiarModoVisualizacion}
           onEliminarPartido={handleEliminarPartido}
+          readOnly={true}
         />
       </div>
 
