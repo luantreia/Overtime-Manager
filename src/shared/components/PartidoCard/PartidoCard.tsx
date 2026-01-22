@@ -1,6 +1,6 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import type { Partido } from '../../../types';
-import { formatDate, formatDateTime } from '../../../utils/formatDate';
+import { formatDate, formatDateTime } from '../../utils/formatDate';
 
 export interface PartidoCardProps {
   partido: Partido;

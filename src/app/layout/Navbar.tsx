@@ -18,7 +18,7 @@ const links = [
 ];
 
 export default function Navbar() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { jugadorSeleccionado } = useJugador();
   const [open, setOpen] = useState(false);
   const [pendientes, setPendientes] = useState<number>(0);
@@ -77,15 +77,7 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-3 lg:flex">
           <PlayerSelector />
-          {isAuthenticated ? (
-            <button
-              onClick={logout}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
-              type="button"
-            >
-              Cerrar sesión
-            </button>
-          ) : (
+          {!isAuthenticated && (
             <NavLink to="/login" className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-600 transition hover:text-brand-700">
               Iniciar sesión
             </NavLink>
@@ -118,15 +110,7 @@ export default function Navbar() {
             ))}
             <div className="mt-2 flex items-center justify-between gap-3">
               <PlayerSelector />
-              {isAuthenticated ? (
-                <button
-                  onClick={() => { logout(); setOpen(false); }}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
-                  type="button"
-                >
-                  Cerrar sesión
-                </button>
-              ) : (
+              {!isAuthenticated && (
                 <NavLink to="/login" className="rounded-lg px-3 py-2 text-sm font-semibold text-brand-600 transition hover:text-brand-700" onClick={() => setOpen(false)}>
                   Iniciar sesión
                 </NavLink>
