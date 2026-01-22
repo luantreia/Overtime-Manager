@@ -9,8 +9,8 @@ import { useJugador } from '../providers/JugadorContext';
 const links = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/equipo', label: 'Equipo' },
-  { to: '/jugadores', label: 'Jugadores' },
-  { to: '/competencias', label: 'Temporadas' },
+  { to: '/jugadores', label: 'Ficha del jugador' },
+  { to: '/competencias', label: 'Competencias' },
   { to: '/partidos', label: 'Partidos' },
   { to: '/estadisticas', label: 'Estadísticas' },
   { to: '/notificaciones', label: 'Notificaciones' },
