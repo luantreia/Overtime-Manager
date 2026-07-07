@@ -185,7 +185,7 @@ const PerfilPage = () => {
             />
           </div>
 
-          <div className="mt-4 flex items-center justify_between">
+          <div className="mt-4 flex items-center justify-between">
             {passwordFeedback ? <span className="text-sm text-slate-500">{passwordFeedback}</span> : null}
             <button
               type="submit"

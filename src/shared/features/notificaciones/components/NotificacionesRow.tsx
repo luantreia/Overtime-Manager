@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ISolicitudEdicion, SolicitudEdicionTipo } from '../../solicitudes/types/solicitudesEdicion';
+import type { SolicitudEdicionTipo } from '../../solicitudes/types/solicitudesEdicion';
 import type { NotificacionesRowProps } from '../types/notificacionesTypes';
 import { AprobarButton } from './AprobarButton';
 
@@ -19,7 +19,6 @@ export const NotificacionesRow: React.FC<NotificacionesRowProps> = ({
   onToggleExpand,
   onAprobar,
   onRechazar,
-  onViewDetails,
 }) => {
   const formatDate = (date: string | Date) => {
     const d = new Date(date);
@@ -81,10 +80,10 @@ export const NotificacionesRow: React.FC<NotificacionesRowProps> = ({
               </button>
             )}
             <button
-              onClick={() => onViewDetails(solicitud)}
+              onClick={onToggleExpand}
               className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200"
             >
-              Ver Detalles
+              {isExpanding ? 'Ocultar detalles' : 'Ver detalles'}
             </button>
           </div>
         </td>

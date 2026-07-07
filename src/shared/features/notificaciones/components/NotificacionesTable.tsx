@@ -18,7 +18,6 @@ export const NotificacionesTable: React.FC<NotificacionesTableProps> = ({
   onRefresh,
   onAprobar,
   onRechazar,
-  onViewDetails,
 }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -124,7 +123,6 @@ export const NotificacionesTable: React.FC<NotificacionesTableProps> = ({
                     onToggleExpand={() => toggleExpand(solicitud._id)}
                     onAprobar={onAprobar}
                     onRechazar={onRechazar}
-                    onViewDetails={onViewDetails}
                   />
                 ))}
               </tbody>

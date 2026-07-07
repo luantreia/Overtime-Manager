@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import type { ISolicitudEdicion } from '../../solicitudes/types/solicitudesEdicion';
+import React, { useState } from 'react';
 import type { NotificacionesPanelProps, NotificacionFilterState } from '../types/notificacionesTypes';
 import { useNotificacionesConfig } from '../hooks/useNotificacionesConfig';
 import { useNotificacionesData } from '../hooks/useNotificacionesData';
@@ -32,10 +31,6 @@ export const NotificacionesPanel: React.FC<NotificacionesPanelProps> = ({
     allowedTipos,
     entityType,
   });
-
-  const handleViewDetails = useCallback((solicitud: ISolicitudEdicion) => {
-    console.log('View details:', solicitud._id);
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -71,7 +66,6 @@ export const NotificacionesPanel: React.FC<NotificacionesPanelProps> = ({
         onRefresh={refresh}
         onAprobar={aprobar}
         onRechazar={rechazar}
-        onViewDetails={handleViewDetails}
       />
     </div>
   );

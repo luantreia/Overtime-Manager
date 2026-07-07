@@ -65,7 +65,6 @@ export interface NotificacionesTableProps {
   onRefresh?: () => void;
   onAprobar: (solicitud: ISolicitudEdicion) => void;
   onRechazar: (solicitud: ISolicitudEdicion) => void;
-  onViewDetails: (solicitud: ISolicitudEdicion) => void;
 }
 
 export interface NotificacionesRowProps {
@@ -77,7 +76,6 @@ export interface NotificacionesRowProps {
   onToggleExpand: () => void;
   onAprobar: (solicitud: ISolicitudEdicion) => void;
   onRechazar: (solicitud: ISolicitudEdicion) => void;
-  onViewDetails: (solicitud: ISolicitudEdicion) => void;
 }
 
 export interface UseNotificacionesDataResult {
