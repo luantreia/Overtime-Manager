@@ -4,7 +4,7 @@ import { getResumenEstadisticasJugador } from '../services/estadisticasService';
 import EstadisticaCard from '../../../shared/components/EstadisticaCard';
 import { formatDate } from '../../../shared/utils/formatDate';
 import { formatNumber } from '../../../shared/utils/formatNumber';
-import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 import ModalSolicitudEstadisticas from '../components/ModalSolicitudEstadisticas';
 
@@ -119,7 +119,8 @@ const EstadisticasPage = () => {
             onClick={() => setModalAbierto(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
           >
-            📝 Solicitar registro
+            <PencilSquareIcon className="h-4 w-4" />
+            Solicitar registro
           </button>
         </div>
       </header>
@@ -144,6 +145,7 @@ const EstadisticasPage = () => {
             <p className="text-sm text-slate-500">Detalle de métricas por encuentro donde el jugador registró estadísticas.</p>
           </header>
           <div className="overflow-hidden rounded-xl border border-slate-200">
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 text-sm">
               <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
@@ -168,6 +170,7 @@ const EstadisticasPage = () => {
                 ))}
               </tbody>
             </table>
+            </div>
             {estadisticasPorPartido.length === 0 ? (
               <p className="px-4 py-5 text-sm text-slate-500">Sin registros de estadísticas para este jugador.</p>
             ) : null}
@@ -184,6 +187,7 @@ const EstadisticasPage = () => {
           <span className="text-xs uppercase tracking-wide text-slate-400">{historial.length} partidos</span>
         </header>
         <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <tr>
@@ -204,6 +208,7 @@ const EstadisticasPage = () => {
               ))}
             </tbody>
           </table>
+          </div>
           {historial.length === 0 ? (
             <p className="px-4 py-5 text-sm text-slate-500">Sin resultados recientes.</p>
           ) : null}

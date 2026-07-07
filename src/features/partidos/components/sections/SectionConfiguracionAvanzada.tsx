@@ -1,4 +1,5 @@
 import React from 'react';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import { PartidoDetallado } from '../../services/partidoService';
 
 type ConfiguracionAvanzadaSectionProps = {
@@ -64,7 +65,8 @@ export const ConfiguracionAvanzadaSection: React.FC<ConfiguracionAvanzadaSection
                 className={`px-4 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 transition-colors flex items-center gap-2 ${readOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="Eliminar este partido permanentemente"
               >
-                🗑️ Eliminar Partido
+                <TrashIcon className="h-4 w-4" />
+                Eliminar Partido
               </button>
             </div>
           </div>

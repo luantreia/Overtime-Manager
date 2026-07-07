@@ -6,7 +6,7 @@ import {
 	useMemo,
 	useState,
 } from 'react';
-import { getJugadores } from '../../features/jugadores/services/jugadorService';
+import { getJugadores, getCurrentJugador } from '../../features/jugadores/services/jugadorService';
 import type { Jugador } from '../../types';
 
 type JugadorContextValue = {
@@ -39,6 +39,17 @@ export const JugadorProvider: React.FC<{ children: React.ReactNode }> = ({ child
 					setJugadorSeleccionado(matched);
 					return;
 				}
+			}
+
+			// Por defecto, mostrar el perfil vinculado a la cuenta del usuario
+			// en vez de forzarlo a elegirse de la lista global de jugadores.
+			try {
+				const propio = await getCurrentJugador();
+				const matched = lista.find((j) => j.id === propio.id) ?? propio;
+				setJugadorSeleccionado(matched);
+				return;
+			} catch {
+				// Sin perfil propio vinculado (o endpoint no disponible): cae al selector manual.
 			}
 
 			setJugadorSeleccionado(lista[0] ?? null);

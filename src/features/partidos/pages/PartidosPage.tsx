@@ -12,6 +12,7 @@ import { useToken } from '../../../app/providers/AuthContext';
 import ModalAlineacionPartido from '../components/modals/ModalAlineacionPartido';
 import ModalInformacionPartido from '../components/modals/ModalInformacionPartido';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
+import { DocumentTextIcon } from '@heroicons/react/24/outline';
 
 const PartidosPage = () => {
   const token = useToken();
@@ -284,7 +285,8 @@ const PartidosPage = () => {
                         onClick={() => handleAbrirInformacion(partido.id)}
                         className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                       >
-                        🖊️ Datos
+                        <DocumentTextIcon className="h-3.5 w-3.5" />
+                        Datos
                       </button>
                     </>
                   }
@@ -323,7 +325,8 @@ const PartidosPage = () => {
                         onClick={() => handleAbrirInformacion(partido.id)}
                         className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                       >
-                        🖊️ Datos
+                        <DocumentTextIcon className="h-3.5 w-3.5" />
+                        Datos
                       </button>
                     </>
                   }
