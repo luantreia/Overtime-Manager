@@ -23,6 +23,9 @@ interface DatosEliminarJugadorEquipo {
 
 // removed unused union type
 
+const getCreadoPorId = (creadoPor: ISolicitudEdicion['creadoPor']): string =>
+  typeof creadoPor === 'string' ? creadoPor : creadoPor?._id ?? '';
+
 interface Props {
   jugadorId: string;
   administradores?: string[];
@@ -163,7 +166,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
       // Filtrar las que están relacionadas con este jugador
       const relacionadas = todasPendientes.filter(solicitud => {
         // Mostrar solicitudes creadas por este usuario (puede cancelar)
-        if (solicitud.creadoPor === user?.id) {
+        if (getCreadoPorId(solicitud.creadoPor) === user?.id) {
           return true;
         }
 
@@ -214,8 +217,8 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
 
       // Cargar usuarios creadores
       const creadorIds = relacionadas
-        .filter(s => s.creadoPor !== user?.id)
-        .map(s => s.creadoPor);
+        .filter(s => getCreadoPorId(s.creadoPor) !== user?.id)
+        .map(s => getCreadoPorId(s.creadoPor));
 
       if (creadorIds.length > 0) {
         await cargarUsuariosCreadores(creadorIds);
@@ -290,7 +293,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
 
   // Función para determinar qué acciones puede hacer el usuario con esta solicitud
   const getAccionesDisponibles = (solicitud: ISolicitudEdicion) => {
-    const esSolicitante = solicitud.creadoPor === user?.id;
+    const esSolicitante = getCreadoPorId(solicitud.creadoPor) === user?.id;
     const esAdminGlobal = user?.rol === 'admin';
     const esAdminJugadorActual = administradores.includes(user?.id || '');
 
@@ -306,8 +309,9 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
       const esAdminEquipoActual = adminsEquipo.includes(user?.id || '');
 
       // Determinar de qué lado se creó la solicitud
-      const creadorEsAdminEquipo = adminsEquipo.includes(solicitud.creadoPor);
-      const creadorEsAdminJugador = administradores.includes(solicitud.creadoPor);
+      const creadorId = getCreadoPorId(solicitud.creadoPor);
+      const creadorEsAdminEquipo = adminsEquipo.includes(creadorId);
+      const creadorEsAdminJugador = administradores.includes(creadorId);
 
       // Admin global siempre puede aprobar/rechazar
       if (esAdminGlobal) {
@@ -356,7 +360,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
         <ul className="space-y-3">
           {solicitudes.map((solicitud, index) => {
             const acciones = getAccionesDisponibles(solicitud);
-            const esSolicitante = solicitud.creadoPor === user?.id;
+            const esSolicitante = getCreadoPorId(solicitud.creadoPor) === user?.id;
 
             return (
               <li key={`${solicitud._id}-${index}`} className="flex items-start justify-between p-3 border border-slate-100 rounded-lg">
@@ -368,11 +372,12 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
                         if (esSolicitante) {
                           return 'Enviada por ti';
                         }
-                        const userCreador = usuariosCreadores.get(solicitud.creadoPor);
+                        const creadorId = getCreadoPorId(solicitud.creadoPor);
+                        const userCreador = usuariosCreadores.get(creadorId);
                         if (userCreador) {
                           return `${userCreador.nombre} (${userCreador.email})`;
                         }
-                        return `Usuario ${solicitud.creadoPor.slice(-6)}`; // fallback con últimos 6 chars
+                        return `Usuario ${creadorId.slice(-6)}`; // fallback con últimos 6 chars
                       })();
                       return creadorInfo;
                     })()} | {solicitud.createdAt ? new Date(solicitud.createdAt).toLocaleString() : 'Fecha no disponible'}
