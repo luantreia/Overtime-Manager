@@ -36,6 +36,7 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
     void load();
     return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

@@ -61,12 +61,15 @@ export const SolicitudModal: React.FC<SolicitudModalProps> = ({
   }, [isOpen, limpiarError, prefillTipo, prefillDatos]);
 
   // If prefill props change while open, update local state
+  const prefillDatosKey = JSON.stringify(prefillDatos);
   useEffect(() => {
     if (isOpen) {
       if (prefillTipo) setTipoSeleccionado(prefillTipo);
       if (prefillDatos) setDatosPropuestos((prev) => ({ ...prev, ...prefillDatos }));
     }
-  }, [prefillTipo, JSON.stringify(prefillDatos), isOpen]);
+    // prefillDatosKey (deep comparison) is used intentionally instead of prefillDatos by reference
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillTipo, prefillDatosKey, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

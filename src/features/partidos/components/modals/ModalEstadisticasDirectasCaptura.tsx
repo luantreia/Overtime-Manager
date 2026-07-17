@@ -5,8 +5,6 @@ import { extractEquipoId, type PartidoDetallado } from '../../services/partidoSe
 import {
   getJugadoresPartido,
   getEstadisticasJugadorPartidoManual,
-  guardarEstadisticaManualJugadorPartido,
-  actualizarEstadisticaManualJugadorPartido,
   type JugadorPartidoResumen,
   type EstadisticaManualJugador,
 } from '../../../estadisticas/services/estadisticasService';

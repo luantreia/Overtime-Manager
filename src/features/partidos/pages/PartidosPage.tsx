@@ -3,8 +3,7 @@ import api from '../../../shared/api/client';
 import PartidoCard from '../../../shared/components/PartidoCard/PartidoCard';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { getEquiposDelJugador } from '../../jugadores/services/jugadorEquipoService';
-import { getPartido, getPartidos } from '../services/partidoService';
-import { InvalidObjectIdError } from '../../../shared/utils/validateObjectId';
+import { getPartidos } from '../services/partidoService';
 import type { Partido, Equipo } from '../../../types';
 import { ModalPartidoAdmin } from '../components';
 import { useToken } from '../../../app/providers/AuthContext';
@@ -114,27 +113,6 @@ const PartidosPage = () => {
     void refreshPartidos();
   }, [jugadorSeleccionado?.id, refreshPartidos]);
 
-
-  const handleSeleccionar = async (partidoId: string) => {
-    try {
-      const equipoContext = partidoEquipoContext[partidoId];
-      await getPartido(partidoId, equipoContext);
-      setPartidoAdminId(partidoId);
-      setModalAdminAbierto(true);
-    } catch (error) {
-      console.error(error);
-      if (error instanceof InvalidObjectIdError) {
-        addToast({ type: 'error', title: 'ID inválido', message: 'El identificador del partido no es válido. Revisá la selección.' });
-      } else {
-        addToast({ type: 'error', title: 'Error', message: 'No pudimos cargar el detalle del partido' });
-      }
-    }
-  };
-
-  const handleAbrirAlineacion = (partidoId: string) => {
-    setPartidoAlineacionId(partidoId);
-    setAlineacionModalAbierto(true);
-  };
 
   const handleCerrarAlineacion = () => {
     setAlineacionModalAbierto(false);

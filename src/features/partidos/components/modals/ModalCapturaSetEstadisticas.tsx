@@ -10,8 +10,6 @@ import {
   extractEquipoNombre,
   obtenerJugadoresDePartido,
   obtenerEstadisticasJugadorSet,
-  crearEstadisticaJugadorSet,
-  actualizarEstadisticaJugadorSet,
 } from '../../services/partidoService';
 import { crearSolicitudEdicion } from '../../../../shared/features/solicitudes/services/solicitudesEdicionService';
 
@@ -50,7 +48,7 @@ const ModalCapturaSetEstadisticas = ({
   type Row = { jugadorId?: string; jugadorPartidoId?: string; estadisticas: Stats; statId?: string };
   const [rowsLocal, setRowsLocal] = useState<Row[]>([]);
   const [rowsVisitante, setRowsVisitante] = useState<Row[]>([]);
-  const [mapJpToStatId, setMapJpToStatId] = useState<Record<string, string>>({});
+  const [, setMapJpToStatId] = useState<Record<string, string>>({});
 
   const setsOrdenados = useMemo(() => [...sets].sort((a, b) => a.numeroSet - b.numeroSet), [sets]);
 
@@ -274,7 +272,7 @@ const ModalCapturaSetEstadisticas = ({
     } finally {
       setGuardando(false);
     }
-  }, [addToast, numeroSetSeleccionado, partidoId, partido?.equipoLocal, partido?.equipoVisitante, rowsLocal, rowsVisitante, sets, onClose, onRefresh]);
+  }, [addToast, numeroSetSeleccionado, partidoId, partido?.equipoLocal, partido?.equipoVisitante, rowsLocal, rowsVisitante, sets, onClose]);
 
   return (
     <ModalBase isOpen={isOpen} onClose={onClose} bodyClassName="p-0" size="xl" title="Captura de estadísticas por set">

@@ -16,7 +16,6 @@ import type { Jugador, Usuario } from '../../../types';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 import { useJugador } from '../../../app/providers/JugadorContext';
 import { useAuth } from '../../../app/providers/AuthContext';
-import { fromMainValueToError } from 'recharts/types/state/selectors/axisSelectors';
 
 const PlayerProfilePage: React.FC = () => {
   const { playerId } = useParams();
@@ -26,7 +25,7 @@ const PlayerProfilePage: React.FC = () => {
   const [equipos, setEquipos] = useState([] as any[]);
   const [contratosPorEquipo, setContratosPorEquipo] = useState<Record<string, any>>({});
   const [estadisticas, setEstadisticas] = useState<any[]>([]);
-  const [adminUsers, setAdminUsers] = useState<Map<string, Usuario>>(new Map());
+  const [, setAdminUsers] = useState<Map<string, Usuario>>(new Map());
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // editar contrato modal (SolicitudModal) state
@@ -235,17 +234,6 @@ const PlayerProfilePage: React.FC = () => {
       const adminsActualizados = await getAdminsJugador(jugador.id);
       const adminIds = adminsActualizados.map((a: any) => typeof a === 'string' ? a : a.id);
       setJugador({ ...jugador, administradores: adminIds });
-      // Poblar usuarios
-      const userPromises = adminsActualizados.map(async (a: any) => {
-        if (typeof a === 'object' && a.id) return a as Usuario;
-        return await getUsuarioById(a).catch(() => ({ id: a, nombre: a, email: 'Usuario no encontrado' } as Usuario));
-      });
-      const users = await Promise.all(userPromises);
-      const adminUsersMap = new Map<string, Usuario>();
-      users.forEach((user: Usuario) => {
-        adminUsersMap.set(user.id, user);
-      });
-      setAdminUsers(adminUsersMap);
     } catch (error) {
       console.error('Error refreshing admins:', error);
     }

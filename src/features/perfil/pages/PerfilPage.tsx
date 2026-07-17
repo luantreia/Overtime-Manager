@@ -44,6 +44,7 @@ const PerfilPage = () => {
     if (user) {
       void refreshCounts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const openSolicitud = (tipo: SolicitudEdicionTipo) => {
