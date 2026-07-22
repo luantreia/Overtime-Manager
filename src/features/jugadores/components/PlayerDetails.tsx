@@ -88,7 +88,22 @@ const PlayerDetails: React.FC<Props> = ({ jugador, onSave }) => {
           <label className="block text-sm font-medium text-slate-700">Género</label>
           <Select id="genero" name="genero" value={form.genero} onChange={handleChange} options={GENERO_OPCIONES} />
           <Input id="nacionalidad" label="Nacionalidad" name="nacionalidad" value={form.nacionalidad} onChange={handleChange} />
-          <Input id="foto" label="URL de foto" name="foto" value={form.foto} onChange={handleChange} />
+          <Input
+            id="foto"
+            label="URL de foto"
+            name="foto"
+            value={form.foto}
+            onChange={handleChange}
+            helperText={
+              <>
+                Subí la imagen a{' '}
+                <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" className="underline">
+                  postimages.org
+                </a>{' '}
+                y pegá el link "Direct link". Usá una imagen cuadrada y de buena resolución para que se vea bien en las tarjetas compartibles.
+              </>
+            }
+          />
           <div className="flex justify-end gap-3">
             <button type="button" className="rounded-lg border px-3 py-1 text-sm" onClick={() => setEdit(false)}>
               Cancelar
