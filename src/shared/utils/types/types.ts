@@ -58,6 +58,7 @@ export interface Jugador {
   genero?: string;
   foto?: string;
   nacionalidad?: string;
+  perfilReclamado?: boolean;
 }
 
 // ========================================

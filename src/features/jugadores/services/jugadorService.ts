@@ -17,6 +17,7 @@ const mapBackendJugador = (b: any): Jugador => {
     nacionalidad: b?.nacionalidad,
     creadoPor: b?.creadoPor,
     administradores: Array.isArray(b?.administradores) ? b.administradores : undefined,
+    perfilReclamado: b?.perfilReclamado,
     // legacy/optional fields
     posicion: b?.posicion,
     estado: b?.estado,
@@ -53,4 +54,8 @@ export const getJugadores = async (): Promise<Jugador[]> => {
 export const updateJugador = async (id: string, payload: Partial<Jugador>): Promise<Jugador> => {
   const backend = await authFetch<any>(`/jugadores/${id}`, { method: 'PATCH', body: payload });
   return mapBackendJugador(backend);
+};
+
+export const generarInvitacion = async (id: string): Promise<{ token: string; expiresAt: string }> => {
+  return authFetch<{ token: string; expiresAt: string }>(`/jugadores/${id}/invitaciones`, { method: 'POST' });
 };

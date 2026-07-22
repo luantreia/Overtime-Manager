@@ -7,7 +7,7 @@ import SolicitudModal from '../../../shared/components/SolicitudModal/SolicitudM
 import ModalGestionAdministradoresEntidad from '../../../shared/components/modalGestionAdministradoresEntidad/ModalGestionAdministradoresEntidad';
 import PlayerSolicitudesEdicion from '../components/PlayerSolicitudesEdicion';
 import PlayerStats from '../components/PlayerStats';
-import { getJugadorById, updateJugador } from '../services/jugadorService';
+import { getJugadorById, updateJugador, getJugadores, generarInvitacion } from '../services/jugadorService';
 import { getEquiposDelJugador, getRelacionesPorJugadorRaw } from '../services/jugadorEquipoService';
 import { solicitarCrearContratoJugadorEquipo } from '../services/solicitudesJugadorEquipoService';
 import { getResumenEstadisticasJugador } from '../../estadisticas/services/estadisticasService';
@@ -27,6 +27,9 @@ const PlayerProfilePage: React.FC = () => {
   const [estadisticas, setEstadisticas] = useState<any[]>([]);
   const [, setAdminUsers] = useState<Map<string, Usuario>>(new Map());
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [jugadoresAdministrados, setJugadoresAdministrados] = useState<Jugador[]>([]);
+  const [invitacionLinks, setInvitacionLinks] = useState<Record<string, string>>({});
+  const [generandoInvitacionId, setGenerandoInvitacionId] = useState<string | null>(null);
 
   // editar contrato modal (SolicitudModal) state
   const [isSolicitudEditOpen, setIsSolicitudEditOpen] = useState(false);
@@ -162,6 +165,49 @@ const PlayerProfilePage: React.FC = () => {
       setAdminUsers(new Map());
     }
   }, [jugador?.administradores, loadAdminUsers]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadAdministrados = async () => {
+      try {
+        const todos = await getJugadores();
+        if (!cancelled) setJugadoresAdministrados(todos.filter((j) => !j.perfilReclamado));
+      } catch (err) {
+        console.error('Error cargando jugadores administrados:', err);
+      }
+    };
+    void loadAdministrados();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const puedeInvitar = useCallback((j: Jugador) => {
+    if (!user) return false;
+    return user.rol === 'admin' || user.id === j.creadoPor || !!j.administradores?.includes(user.id);
+  }, [user]);
+
+  const PUBLIC_SITE_URL = process.env.REACT_APP_PUBLIC_SITE_URL ?? '';
+
+  const handleGenerarInvitacion = useCallback(async (jugadorId: string) => {
+    setGenerandoInvitacionId(jugadorId);
+    try {
+      const { token } = await generarInvitacion(jugadorId);
+      const url = `${PUBLIC_SITE_URL}/claim/${token}`;
+      setInvitacionLinks((prev) => ({ ...prev, [jugadorId]: url }));
+      try {
+        await navigator.clipboard.writeText(url);
+        addToast({ type: 'success', title: 'Link copiado', message: 'El link de invitación se copió al portapapeles' });
+      } catch {
+        addToast({ type: 'success', title: 'Link generado', message: url });
+      }
+    } catch (err) {
+      console.error('Error generando invitación:', err);
+      addToast({ type: 'error', title: 'Error', message: 'No se pudo generar el link de invitación' });
+    } finally {
+      setGenerandoInvitacionId(null);
+    }
+  }, [PUBLIC_SITE_URL, addToast]);
 
   const refreshExtras = useCallback(async () => {
     if (!jugador?.id) return;
@@ -352,6 +398,36 @@ const PlayerProfilePage: React.FC = () => {
                 getFunction={getAdminsFunction}
                 removeFunction={removeAdminFunction}
               />
+            </div>
+          )}
+          {jugadoresAdministrados.filter(puedeInvitar).length > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold mb-4">Jugadores que administro</h3>
+              <ul className="space-y-3">
+                {jugadoresAdministrados.filter(puedeInvitar).map((j) => (
+                  <li key={j.id} className="flex flex-col gap-2 rounded-lg border border-slate-100 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm font-medium">{j.nombre}</span>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      {invitacionLinks[j.id] && (
+                        <input
+                          readOnly
+                          value={invitacionLinks[j.id]}
+                          onFocus={(e) => e.currentTarget.select()}
+                          className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 sm:w-64"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleGenerarInvitacion(j.id)}
+                        disabled={generandoInvitacionId === j.id}
+                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-700 disabled:opacity-50"
+                      >
+                        {generandoInvitacionId === j.id ? 'Generando…' : invitacionLinks[j.id] ? 'Regenerar link' : 'Generar link de invitación'}
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
