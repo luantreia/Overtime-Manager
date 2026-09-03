@@ -23,7 +23,16 @@ const JugadorList = ({
   onRechazarSolicitud,
   onEditarJugador,
   onVerContratosNoActivos,
-}: JugadorListProps) => (
+}: JugadorListProps) => {
+  // El hook vivía dentro del .map() de las solicitudes. Los hooks tienen que ejecutarse
+  // siempre, en el mismo orden y en el cuerpo del componente: dentro de un map su cantidad
+  // depende de cuántas solicitudes haya, y React pierde la correspondencia entre renders en
+  // cuanto esa lista cambia de largo. Además resolvía el mismo contexto una vez por fila.
+  const { user } = useAuth();
+  const uid = user?.id;
+  const isAdminGlobal = user?.rol === 'admin';
+
+  return (
   <div className="space-y-6">
   <section>
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -110,9 +119,6 @@ const JugadorList = ({
         </header>
         <ul className="space-y-4">
           {solicitudesPendientes.map((solicitud) => {
-            const { user } = useAuth();
-            const uid = user?.id;
-            const isAdminGlobal = user?.rol === 'admin';
             const isSolicitante = solicitud.solicitadoPor ? solicitud.solicitadoPor === uid : false;
             const isJugadorAdmin = !!(solicitud.jugador?.creadoPor === uid || solicitud.jugador?.administradores?.includes(uid || ''));
             const isEquipoAdmin = !!(solicitud.equipo?.creadoPor === uid || solicitud.equipo?.administradores?.includes(uid || ''));
@@ -158,6 +164,7 @@ const JugadorList = ({
       </section>
     ) : null}
   </div>
-);
+  );
+};
 
 export default JugadorList;

@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { login as loginRequest, getProfile } from '../../features/auth/services/authService';
 import type { Usuario } from '../../types';
+import { identificarUsuario } from '../../shared/observabilidad/sentry';
 
 type AuthContextValue = {
   user: Usuario | null;
@@ -17,6 +18,15 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  /**
+   * Abre sesión con tokens que ya tenemos, sin pasar por email y contraseña.
+   *
+   * Lo usa el canje de invitaciones: ese endpoint crea la cuenta Y devuelve los tokens en la
+   * misma respuesta. Sin esto habría que pedirle al jugador que inicie sesión con la contraseña
+   * que acaba de tipear, en la pantalla siguiente, que es exactamente el paso que hace que la
+   * gente abandone un onboarding.
+   */
+  establecerSesion: (datos: { user: Usuario; accessToken: string; refreshToken?: string }) => void;
   logout: () => void;
   refreshProfile: () => Promise<void>;
 };
@@ -106,6 +116,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
+  const establecerSesion = useCallback(
+    ({ user: usuario, accessToken, refreshToken: rt }: { user: Usuario; accessToken: string; refreshToken?: string }) => {
+      setStoredToken(accessToken);
+      setStoredRefreshToken(rt ?? null);
+      setToken(accessToken);
+      setRefreshToken(rt ?? null);
+      setUser(usuario);
+      setError(null);
+      setLoading(false);
+    },
+    []
+  );
+
   const logout = useCallback(() => {
     setStoredToken(null);
     setStoredRefreshToken(null);
@@ -118,6 +141,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     await handleProfileLoad();
   }, [handleProfileLoad]);
 
+
+  /**
+   * Un efecto que sigue al estado, en vez de avisarle a Sentry en cada lugar donde `user`
+   * cambia. Una sola fuente no se puede desincronizar: si mañana aparece otra transición,
+   * esta queda cubierta.
+   */
+  useEffect(() => {
+    identificarUsuario(user ? { id: user.id, rol: (user as { rol?: string }).rol } : null);
+  }, [user]);
+
   const value = useMemo(
     () => ({
       user,
@@ -126,10 +159,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isAuthenticated: Boolean(user),
       token,
       login,
+      establecerSesion,
       logout,
       refreshProfile,
     }),
-    [user, loading, error, token, login, logout, refreshProfile]
+    [user, loading, error, token, login, establecerSesion, logout, refreshProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

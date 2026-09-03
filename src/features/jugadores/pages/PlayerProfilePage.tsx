@@ -187,13 +187,19 @@ const PlayerProfilePage: React.FC = () => {
     return user.rol === 'admin' || user.id === j.creadoPor || !!j.administradores?.includes(user.id);
   }, [user]);
 
-  const PUBLIC_SITE_URL = process.env.REACT_APP_PUBLIC_SITE_URL ?? '';
+  /**
+   * El canje ahora vive en esta misma app (`/claim/:token`), no en el portal público. Se usa
+   * el origen actual para no depender de una variable de entorno que puede quedar sin definir
+   * y producir links rotos silenciosamente, como pasaba con REACT_APP_PUBLIC_SITE_URL vacía.
+   */
+  const BASE_CLAIM = process.env.REACT_APP_MANAGER_URL || window.location.origin;
 
   const handleGenerarInvitacion = useCallback(async (jugadorId: string) => {
     setGenerandoInvitacionId(jugadorId);
     try {
       const { token } = await generarInvitacion(jugadorId);
-      const url = `${PUBLIC_SITE_URL}/claim/${token}`;
+      const base = BASE_CLAIM.endsWith('/') ? BASE_CLAIM.slice(0, -1) : BASE_CLAIM;
+      const url = `${base}/claim/${token}`;
       setInvitacionLinks((prev) => ({ ...prev, [jugadorId]: url }));
       try {
         await navigator.clipboard.writeText(url);
@@ -207,7 +213,7 @@ const PlayerProfilePage: React.FC = () => {
     } finally {
       setGenerandoInvitacionId(null);
     }
-  }, [PUBLIC_SITE_URL, addToast]);
+  }, [BASE_CLAIM, addToast]);
 
   const refreshExtras = useCallback(async () => {
     if (!jugador?.id) return;

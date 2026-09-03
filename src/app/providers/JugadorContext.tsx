@@ -7,6 +7,7 @@ import {
 	useState,
 } from 'react';
 import { getJugadores, getCurrentJugador } from '../../features/jugadores/services/jugadorService';
+import { useAuth } from './AuthContext';
 import type { Jugador } from '../../types';
 
 type JugadorContextValue = {
@@ -22,11 +23,18 @@ const JugadorContext = createContext<JugadorContextValue | undefined>(undefined)
 const JUGADOR_STORAGE_KEY = 'overtime_jugador_actual';
 
 export const JugadorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+	const { token } = useAuth();
 	const [jugadores, setJugadores] = useState<Jugador[]>([]);
 	const [jugadorSeleccionado, setJugadorSeleccionado] = useState<Jugador | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 
 	const cargarJugadores = useCallback(async () => {
+		if (!token) {
+			setJugadores([]);
+			setJugadorSeleccionado(null);
+			setLoading(false);
+			return;
+		}
 		try {
 			setLoading(true);
 			const lista = await getJugadores();
@@ -60,8 +68,13 @@ export const JugadorProvider: React.FC<{ children: React.ReactNode }> = ({ child
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [token]);
 
+	/**
+	 * Atado al token, no a `[]`. Sin sesión no hay jugadores que pedir —y pedirlos igual es un
+	 * 401 en la pantalla de login o en el canje de invitaciones—; y después de iniciar sesión
+	 * esto tiene que volver a correr, cosa que con `[]` no pasaba hasta recargar la página.
+	 */
 	useEffect(() => {
 		void cargarJugadores();
 	}, [cargarJugadores]);

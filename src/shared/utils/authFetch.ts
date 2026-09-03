@@ -91,8 +91,28 @@ export const authFetch = async <TResponse>(
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Error al comunicarse con el servidor');
+    // El backend responde los errores como JSON (`{ message }` o `{ error }`). Devolver el
+    // texto crudo hacía que la UI mostrara literalmente {"message":"Invitación no encontrada"}
+    // al usuario, llaves incluidas. Se parsea acá para que cada pantalla no tenga que hacerlo.
+    let mensaje = 'Error al comunicarse con el servidor';
+    let detalles: unknown = null;
+    try {
+      const tipo = response.headers.get('Content-Type') || '';
+      if (tipo.includes('application/json')) {
+        detalles = await response.json();
+        const cuerpo = detalles as { message?: string; error?: string };
+        mensaje = cuerpo?.message || cuerpo?.error || mensaje;
+      } else {
+        mensaje = (await response.text()) || mensaje;
+      }
+    } catch {
+      // Cuerpo ilegible: queda el mensaje genérico, que es mejor que romper acá.
+    }
+
+    const error = new Error(mensaje) as Error & { status?: number; details?: unknown };
+    error.status = response.status;
+    if (detalles) error.details = detalles;
+    throw error;
   }
 
   if (response.status === 204) {
