@@ -11,6 +11,8 @@ import { InvalidObjectIdError } from '../../../../shared/utils/validateObjectId'
 import type { Competencia } from '../../../../types';
 import { getParticipaciones as getCompetencias } from '../../../competencias/services/equipoCompetenciaService';
 import { useToast } from '../../../../shared/components/Toast/ToastProvider';
+import { SolicitudButton } from '../../../../shared/components/SolicitudButton/SolicitudButton';
+import { extraerYoutubeId } from '../../../../shared/utils/youtube';
 
 interface ModalInformacionPartidoProps {
   partidoId: string | null;
@@ -176,6 +178,14 @@ const ModalInformacionPartido = ({ partidoId, isOpen, onClose }: ModalInformacio
                   >
                     Editar
                   </button>
+                  {partidoId && (
+                    <SolicitudButton
+                      contexto={{ contexto: 'partido', entidadId: partidoId }}
+                      prefillTipo="editarPartidoVideo"
+                      label="Solicitar video"
+                      variant="secondary"
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="space-x-2">
@@ -364,6 +374,19 @@ const ModalInformacionPartido = ({ partidoId, isOpen, onClose }: ModalInformacio
                 <p>
                   <strong>Marcador:</strong> {partido.marcadorLocal} - {partido.marcadorVisitante}
                 </p>
+                {(partido as any).videoUrl && extraerYoutubeId((partido as any).videoUrl) && (
+                  <p>
+                    <strong>Video:</strong>{' '}
+                    <a
+                      href={(partido as any).videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Ver video
+                    </a>
+                  </p>
+                )}
               </div>
             )}
           </div>

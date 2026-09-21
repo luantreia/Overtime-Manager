@@ -8,6 +8,7 @@ import {
   SolicitudEdicionTipo,
 } from '../../features/solicitudes';
 import ModalBase from '../ModalBase/ModalBase';
+import { extraerYoutubeId } from '../../utils/youtube';
 
 interface SolicitudModalProps {
   isOpen: boolean;
@@ -79,6 +80,15 @@ export const SolicitudModal: React.FC<SolicitudModalProps> = ({
         type: 'error',
         title: 'Validación',
         message: 'Debe seleccionar un tipo de solicitud',
+      });
+      return;
+    }
+
+    if (tipoSeleccionado === 'editarPartidoVideo' && !extraerYoutubeId(datosPropuestos.videoUrl)) {
+      addToast({
+        type: 'error',
+        title: 'Link inválido',
+        message: 'Pegá un link de YouTube válido',
       });
       return;
     }
@@ -459,6 +469,26 @@ const FormularioSolicitudDinamico: React.FC<FormularioSolicitudDinamicoProps> = 
         </div>
       );
 
+    case 'editarPartidoVideo':
+      return (
+        <div className="space-y-4">
+          <InputField
+            label="Link de YouTube"
+            type="url"
+            value={valores.videoUrl || ''}
+            onChange={(v) => handleChange('videoUrl', v)}
+            required
+            placeholder="https://youtube.com/watch?v=..."
+          />
+          <TextAreaField
+            label="Comentario (opcional)"
+            value={valores.mensaje || ''}
+            onChange={(v) => handleChange('mensaje', v)}
+            placeholder="Ej: es el video en vivo, sigue grabando después de terminado el partido..."
+          />
+        </div>
+      );
+
     default:
       return (
         <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
@@ -585,6 +615,7 @@ function formatearTipo(tipo: string): string {
     'usuario-solicitar-admin-equipo': 'Solicitar Administración de Equipo',
     'usuario-solicitar-admin-jugador': 'Solicitar Administración de Jugador',
     'usuario-solicitar-admin-organizacion': 'Solicitar Administración de Organización',
+    'editarPartidoVideo': 'Video del Partido',
   };
   return mapa[tipo] || tipo;
 }
