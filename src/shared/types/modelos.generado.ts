@@ -748,6 +748,7 @@ export interface Partido {
   jornada: string | null;
   posicionBracket: number;
   nombrePartido?: string;
+  videoUrl: string;
   modalidad: PartidoModalidad;
   categoria: PartidoCategoria;
   fecha: string;
@@ -845,6 +846,7 @@ export interface PlanillaEstadistica {
 export interface PlanillaPresente {
   planilla: Ref<PlanillaEquipo>;
   jugador: Ref<Jugador>;
+  equipo?: Ref<Equipo>;
   jugadorPartido: Ref<JugadorPartido> | null;
   numero?: number;
   rol: PlanillaPresenteRol;
