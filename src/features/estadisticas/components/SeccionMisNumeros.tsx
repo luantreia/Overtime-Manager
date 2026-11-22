@@ -38,7 +38,7 @@ const nombrePartido = (p: PartidoRef): string =>
   `${p.equipoLocal?.nombre ?? 'Local'} vs ${p.equipoVisitante?.nombre ?? 'Visitante'}`;
 
 const Celda = ({ v, distinto }: { v: Totales | null | undefined; distinto?: boolean }) => (
-  <td className={`px-3 py-2 text-right text-xs tabular-nums ${distinto ? 'text-amber-700' : 'text-slate-600'}`}>
+  <td className={`px-3 py-2 text-right text-xs tabular-nums ${distinto ? 'font-semibold text-amber-700' : 'text-slate-600'}`}>
     {v ? CAMPOS.map((c) => `${INICIAL[c]}${v[c]}`).join(' ') : '—'}
   </td>
 );
