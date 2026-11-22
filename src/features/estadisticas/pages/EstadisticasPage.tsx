@@ -7,6 +7,7 @@ import { formatNumber } from '../../../shared/utils/formatNumber';
 import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 import ModalSolicitudEstadisticas from '../components/ModalSolicitudEstadisticas';
+import SeccionMisNumeros from '../components/SeccionMisNumeros';
 
 
 
@@ -138,6 +139,7 @@ const EstadisticasPage = () => {
           Todavía no hay métricas generales para este jugador.
         </section>
       ) : null}
+      {jugadorSeleccionado?.id ? <SeccionMisNumeros jugadorId={jugadorSeleccionado.id} /> : null}
       <section className="grid gap-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
           <header className="mb-4">
