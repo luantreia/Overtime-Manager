@@ -97,9 +97,9 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
     <ModalBase isOpen={isOpen} onClose={onClose} title="Solicitar ingreso a equipo" size="md">
       <div className="space-y-4 p-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700">Buscar equipo</label>
+          <label htmlFor="modalsolicitaringreso-buscar-equipo" className="block text-sm font-medium text-slate-700">Buscar equipo</label>
           <div className="mt-2 flex gap-2">
-            <input
+            <input id="modalsolicitaringreso-buscar-equipo"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Escribí el nombre del equipo..."
@@ -133,12 +133,12 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
 
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-slate-700">Desde (opcional)</label>
-            <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" />
+            <label htmlFor="modalsolicitaringreso-desde-opcional" className="block text-sm font-medium text-slate-700">Desde (opcional)</label>
+            <input id="modalsolicitaringreso-desde-opcional" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700">Hasta (opcional)</label>
-            <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" />
+            <label htmlFor="modalsolicitaringreso-hasta-opcional" className="block text-sm font-medium text-slate-700">Hasta (opcional)</label>
+            <input id="modalsolicitaringreso-hasta-opcional" type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" />
           </div>
         </div>
 

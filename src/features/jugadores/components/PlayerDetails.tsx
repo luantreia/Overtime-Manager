@@ -85,7 +85,7 @@ const PlayerDetails: React.FC<Props> = ({ jugador, onSave }) => {
           <Input id="nombre" label="Nombre" name="nombre" value={form.nombre} onChange={handleChange} />
           <Input id="alias" label="Alias" name="alias" value={form.alias} onChange={handleChange} />
           <Input id="fechaNacimiento" label="Fecha de nacimiento" name="fechaNacimiento" type="date" value={form.fechaNacimiento} onChange={handleChange} />
-          <label className="block text-sm font-medium text-slate-700">Género</label>
+          <label htmlFor="genero" className="block text-sm font-medium text-slate-700">Género</label>
           <Select id="genero" name="genero" value={form.genero} onChange={handleChange} options={GENERO_OPCIONES} />
           <Input id="nacionalidad" label="Nacionalidad" name="nacionalidad" value={form.nacionalidad} onChange={handleChange} />
           <Input

@@ -46,10 +46,10 @@ const ModalSolicitudEstadisticas: React.FC<ModalSolicitudEstadisticasProps> = ({
     <ModalBase isOpen={isOpen} onClose={onClose} title={`Solicitar Estadísticas para ${jugadorNombre || 'Jugador'}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label htmlFor="modalsolicitudestadisticas-campo-49" className="block text-sm font-medium text-gray-700">
             Motivo de la solicitud
           </label>
-          <textarea
+          <textarea id="modalsolicitudestadisticas-campo-49"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             rows={4}
             value={mensaje}
