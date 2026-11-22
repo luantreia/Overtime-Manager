@@ -41,7 +41,7 @@ const PlayerRequests: React.FC<Props> = ({ solicitudes = [], onCancelar, onAcept
                   {s.equipo ? <div className="text-xs text-slate-500">Equipo: {s.equipo.nombre}</div> : null}
                   {s.fechaInicio ? <div className="text-xs text-slate-500">Desde: {new Date(s.fechaInicio).toLocaleDateString()}</div> : null}
                   {s.fechaFin ? <div className="text-xs text-slate-500">Hasta: {new Date(s.fechaFin).toLocaleDateString()}</div> : null}
-                  {s.fechaSolicitud ? <div className="text-xs text-slate-400">Solicitada: {new Date(s.fechaSolicitud).toLocaleString()}</div> : null}
+                  {s.fechaSolicitud ? <div className="text-xs text-muted">Solicitada: {new Date(s.fechaSolicitud).toLocaleString()}</div> : null}
                 </div>
                 <div className="flex gap-2">
                   {showCancel ? (

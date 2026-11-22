@@ -383,7 +383,7 @@ const PlayerSolicitudesEdicion: React.FC<Props> = ({ jugadorId, administradores 
                     })()} | {solicitud.createdAt ? new Date(solicitud.createdAt).toLocaleString() : 'Fecha no disponible'}
                   </div>
                   {solicitud.datosPropuestos && (
-                    <div className="text-xs text-slate-400 mt-1">
+                    <div className="text-xs text-muted mt-1">
                       {solicitud.tipo === 'jugador-equipo-crear' && (() => {
                         const datos = solicitud.datosPropuestos as unknown as DatosCrearJugadorEquipo;
                         const nombreEquipo = nombresEquipos.get(datos.equipoId) || `Equipo ${datos.equipoId.slice(-6)}`;

@@ -173,7 +173,7 @@ const SeccionMisNumeros = ({ jugadorId }: Props) => {
                     <td className="px-3 py-2 text-right">
                       <div className="flex flex-wrap items-center justify-end gap-1.5">
                         {aporte && (
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${APORTE_LABEL[aporte.estado].clase}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-2xs font-bold ${APORTE_LABEL[aporte.estado].clase}`}>
                             {APORTE_LABEL[aporte.estado].texto}
                           </span>
                         )}
@@ -257,7 +257,7 @@ const SeccionMisNumeros = ({ jugadorId }: Props) => {
                   className="flex w-full items-center justify-between px-1 py-2.5 text-left text-sm hover:bg-slate-50"
                 >
                   <span>{nombrePartido(p)}</span>
-                  <span className="text-xs text-slate-400">{formatDate(p.fecha)}</span>
+                  <span className="text-xs text-muted">{formatDate(p.fecha)}</span>
                 </button>
               </li>
             ))}

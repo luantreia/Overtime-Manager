@@ -242,7 +242,7 @@ const PartidosPage = () => {
         <div className="space-y-4">
           <header className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Próximos partidos</h2>
-            <span className="text-xs uppercase tracking-wide text-slate-400">En agenda</span>
+            <span className="text-xs uppercase tracking-wide text-muted">En agenda</span>
           </header>
           {loading ? (
             <div className="space-y-3">
@@ -281,7 +281,7 @@ const PartidosPage = () => {
         <div className="space-y-4">
           <header className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Resultados recientes</h2>
-            <span className="text-xs uppercase tracking-wide text-slate-400">Hasta 10 más recientes</span>
+            <span className="text-xs uppercase tracking-wide text-muted">Hasta 10 más recientes</span>
           </header>
           {loading ? (
             <div className="space-y-3">

@@ -186,7 +186,7 @@ const EstadisticasPage = () => {
             <h2 className="text-lg font-semibold text-slate-900">Historial de resultados</h2>
             <p className="text-sm text-slate-500">Detalle completo de los encuentros registrados.</p>
           </div>
-          <span className="text-xs uppercase tracking-wide text-slate-400">{historial.length} partidos</span>
+          <span className="text-xs uppercase tracking-wide text-muted">{historial.length} partidos</span>
         </header>
         <div className="overflow-hidden rounded-xl border border-slate-200">
           <div className="overflow-x-auto">
