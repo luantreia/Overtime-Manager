@@ -8,6 +8,7 @@ import { ArrowTrendingUpIcon, ChartBarIcon, ShieldCheckIcon, PencilSquareIcon } 
 import { useToast } from '../../../shared/components/Toast/ToastProvider';
 import ModalSolicitudEstadisticas from '../components/ModalSolicitudEstadisticas';
 import SeccionMisNumeros from '../components/SeccionMisNumeros';
+import { DataTable } from 'overtime-kit';
 
 
 
@@ -146,37 +147,21 @@ const EstadisticasPage = () => {
             <h2 className="text-lg font-semibold text-slate-900">Estadísticas por partido</h2>
             <p className="text-sm text-slate-500">Detalle de métricas por encuentro donde el jugador registró estadísticas.</p>
           </header>
-          <div className="overflow-hidden rounded-xl border border-slate-200">
-            <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">Fecha</th>
-                  <th className="px-4 py-3 text-left">Partido</th>
-                  <th className="px-4 py-3 text-right">Throws</th>
-                  <th className="px-4 py-3 text-right">Hits</th>
-                  <th className="px-4 py-3 text-right">Outs</th>
-                  <th className="px-4 py-3 text-right">Catches</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {estadisticasPorPartido.map((p) => (
-                  <tr key={p._id} className="hover:bg-slate-50/60">
-                    <td className="px-4 py-3">{formatDate(p.fecha)}</td>
-                    <td className="px-4 py-3">{p.nombrePartido || 'Partido'}</td>
-                    <td className="px-4 py-3 text-right">{p.throws ?? 0}</td>
-                    <td className="px-4 py-3 text-right">{p.hits ?? 0}</td>
-                    <td className="px-4 py-3 text-right">{p.outs ?? 0}</td>
-                    <td className="px-4 py-3 text-right">{p.catches ?? 0}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-            {estadisticasPorPartido.length === 0 ? (
-              <p className="px-4 py-5 text-sm text-slate-500">Sin registros de estadísticas para este jugador.</p>
-            ) : null}
-          </div>
+          <DataTable
+            caption="Estadísticas por partido"
+            data={estadisticasPorPartido}
+            rowKey={(p) => p._id}
+            empty="Sin registros de estadísticas para este jugador."
+            mobile="scroll"
+            columns={[
+              { id: 'fecha', header: 'Fecha', sortValue: (p) => (p.fecha ? new Date(p.fecha) : null), cell: (p) => formatDate(p.fecha) },
+              { id: 'partido', header: 'Partido', sortValue: (p) => p.nombrePartido, cell: (p) => p.nombrePartido || 'Partido' },
+              { id: 'throws', header: 'Throws', align: 'right', sortValue: (p) => p.throws ?? 0, cell: (p) => p.throws ?? 0 },
+              { id: 'hits', header: 'Hits', align: 'right', sortValue: (p) => p.hits ?? 0, cell: (p) => p.hits ?? 0 },
+              { id: 'outs', header: 'Outs', align: 'right', sortValue: (p) => p.outs ?? 0, cell: (p) => p.outs ?? 0 },
+              { id: 'catches', header: 'Catches', align: 'right', sortValue: (p) => p.catches ?? 0, cell: (p) => p.catches ?? 0 },
+            ]}
+          />
         </div>
       </section>
 
@@ -188,33 +173,18 @@ const EstadisticasPage = () => {
           </div>
           <span className="text-xs uppercase tracking-wide text-muted">{historial.length} partidos</span>
         </header>
-        <div className="overflow-hidden rounded-xl border border-slate-200">
-          <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-4 py-3 text-left">Fecha</th>
-                <th className="px-4 py-3 text-left">Resultado</th>
-                <th className="px-4 py-3 text-right">Puntos anotados</th>
-                <th className="px-4 py-3 text-right">Puntos recibidos</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {historial.map((item) => (
-                <tr key={item.fecha} className="hover:bg-slate-50/60">
-                  <td className="px-4 py-3">{formatDate(item.fecha)}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{RESULTADO_LABELS[item.resultado]}</td>
-                  <td className="px-4 py-3 text-right">{item.puntosAnotados}</td>
-                  <td className="px-4 py-3 text-right">{item.puntosRecibidos}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-          {historial.length === 0 ? (
-            <p className="px-4 py-5 text-sm text-slate-500">Sin resultados recientes.</p>
-          ) : null}
-        </div>
+        <DataTable
+          caption="Historial de resultados"
+          data={historial}
+          rowKey={(item) => item.fecha}
+          empty="Sin resultados recientes."
+          columns={[
+            { id: 'fecha', header: 'Fecha', sortValue: (i) => (i.fecha ? new Date(i.fecha) : null), cell: (i) => formatDate(i.fecha) },
+            { id: 'resultado', header: 'Resultado', sortValue: (i) => RESULTADO_LABELS[i.resultado], cell: (i) => <span className="font-medium text-slate-900">{RESULTADO_LABELS[i.resultado]}</span> },
+            { id: 'anotados', header: 'Puntos anotados', align: 'right', sortValue: (i) => i.puntosAnotados, cell: (i) => i.puntosAnotados },
+            { id: 'recibidos', header: 'Puntos recibidos', align: 'right', sortValue: (i) => i.puntosRecibidos, cell: (i) => i.puntosRecibidos },
+          ]}
+        />
       </section>
 
       <ModalSolicitudEstadisticas
