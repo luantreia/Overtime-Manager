@@ -59,20 +59,20 @@ const DashboardPage = () => {
     if (!resumen) return [];
     return [
       {
-        titulo: 'Efectividad',
-        valor: `${formatNumber(resumen.efectividadEquipo)}%`,
+        titulo: 'Partidos jugados',
+        valor: formatNumber(resumen.partidosJugados ?? 0),
         icono: <ShieldCheckIcon className="h-6 w-6" />,
         tono: 'emerald' as const,
       },
       {
-        titulo: 'Puntos por partido',
-        valor: formatNumber(resumen.puntosPorPartido),
+        titulo: 'Hits',
+        valor: formatNumber(resumen.totales?.hits ?? 0),
         icono: <ChartBarIcon className="h-6 w-6" />,
         tono: 'brand' as const,
       },
       {
-        titulo: 'Posición actual',
-        valor: resumen.posicionActual ? `#${resumen.posicionActual}` : '—',
+        titulo: 'Catches',
+        valor: formatNumber(resumen.totales?.catches ?? 0),
         icono: <ArrowTrendingUpIcon className="h-6 w-6" />,
         tono: 'amber' as const,
       },
