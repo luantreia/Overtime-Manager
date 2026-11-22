@@ -9,12 +9,26 @@ import PartidoCard from '../../../shared/components/PartidoCard/PartidoCard';
 import EstadisticaCard from '../../../shared/components/EstadisticaCard';
 import { ShieldCheckIcon, ChartBarIcon, ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import type { Partido } from '../../../types';
+import EntrenamientoRespuestaCard from '../../entrenamientos/components/EntrenamientoRespuestaCard';
+import { getMisEntrenamientos, type MiEntrenamiento } from '../../entrenamientos/services/entrenamientoService';
 
 const DashboardPage = () => {
   const { jugadorSeleccionado, loading: loadingJugador } = useJugador();
   const [proximoPartido, setProximoPartido] = useState<Partido | null>(null);
   const [resumen, setResumen] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const [proximoEntrenamiento, setProximoEntrenamiento] = useState<MiEntrenamiento | null>(null);
+
+  // Independiente del jugador seleccionado: los entrenamientos son de la persona logueada.
+  useEffect(() => {
+    getMisEntrenamientos()
+      .then((lista) => {
+        const futuros = lista.filter((e) => e.estado !== 'cancelado' && new Date(e.fecha).getTime() >= Date.now());
+        // Primero el que todavía no respondiste: es el que pide una acción.
+        setProximoEntrenamiento(futuros.find((e) => e.respuesta === 'sin_respuesta') ?? futuros[0] ?? null);
+      })
+      .catch(() => setProximoEntrenamiento(null));
+  }, []);
 
   const greetingName = useMemo(() => jugadorSeleccionado?.nombre ?? 'jugador', [jugadorSeleccionado]);
 
@@ -116,6 +130,16 @@ const DashboardPage = () => {
           </div>
         )}
       </section>
+
+      {proximoEntrenamiento && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Próximo entrenamiento</h2>
+            <Link to="/entrenamientos" className="text-sm font-semibold text-brand-600 hover:text-brand-700">Ver todos →</Link>
+          </div>
+          <EntrenamientoRespuestaCard entrenamiento={proximoEntrenamiento} />
+        </section>
+      )}
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

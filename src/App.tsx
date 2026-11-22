@@ -5,6 +5,7 @@ import PlayerProfilePage from './features/jugadores/pages/PlayerProfilePage';
 import TemporadasPage from './features/competencias/pages/TemporadasPage';
 import PartidosPage from './features/partidos/pages/PartidosPage';
 import EstadisticasPage from './features/estadisticas/pages/EstadisticasPage';
+import EntrenamientosPage from './features/entrenamientos/pages/EntrenamientosPage';
 import NotificacionesPage from './features/notificaciones/pages/NotificacionesPage';
 import PerfilPage from './features/perfil/pages/PerfilPage';
 import LoginPage from './features/auth/pages/LoginPage';
@@ -71,6 +72,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <PartidosPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/entrenamientos"
+            element={
+              <ProtectedRoute>
+                <EntrenamientosPage />
               </ProtectedRoute>
             }
           />
