@@ -13,6 +13,7 @@ import ClaimPage from './features/auth/pages/ClaimPage';
 import ProtectedRoute from './app/routes/ProtectedRoute';
 // auth not required here; routing uses `ProtectedRoute` to guard routes
 import Navbar from './app/layout/Navbar';
+import MobileTabBar from './app/layout/MobileTabBar';
 import { FeatureFlagsProvider } from './shared/config/featureFlags';
 
 /**
@@ -117,7 +118,7 @@ const App = () => {
 
   return (
     <FeatureFlagsProvider>
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-dvh flex-col bg-slate-50 pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:pb-0">
       <Navbar />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-8">
@@ -130,6 +131,10 @@ const App = () => {
           <span>Gestión diaria para managers y staff</span>
         </div>
       </footer>
+
+      {/* El padding inferior de arriba deja libre la barra fija de mobile: sin él tapa el final
+          del contenido y el pie de página. Suma el safe-area porque la barra también lo hace. */}
+      <MobileTabBar />
     </div>
     </FeatureFlagsProvider>
   );

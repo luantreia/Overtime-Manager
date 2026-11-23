@@ -46,11 +46,11 @@ const ModalSolicitudEstadisticas: React.FC<ModalSolicitudEstadisticasProps> = ({
     <ModalBase isOpen={isOpen} onClose={onClose} title={`Solicitar Estadísticas para ${jugadorNombre || 'Jugador'}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="modalsolicitudestadisticas-campo-49" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="modalsolicitudestadisticas-campo-49" className="block text-sm font-medium text-slate-700">
             Motivo de la solicitud
           </label>
           <textarea id="modalsolicitudestadisticas-campo-49"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"
             rows={4}
             value={mensaje}
             onChange={(e) => setMensaje(e.target.value)}
@@ -62,14 +62,14 @@ const ModalSolicitudEstadisticas: React.FC<ModalSolicitudEstadisticasProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-md hover:bg-brand-700 disabled:opacity-50"
           >
             {loading ? 'Enviando...' : 'Enviar Solicitud'}
           </button>

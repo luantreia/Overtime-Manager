@@ -149,7 +149,7 @@ const ModalEstadisticasGeneralesCaptura: React.FC<ModalEstadisticasGeneralesCapt
     <ModalBase title="Captura de estadísticas directas" onClose={onClose} size="xl" isOpen>
       {loading ? (
         <div className="text-center py-8">
-          <p className="text-gray-600">Cargando jugadores y estadísticas...</p>
+          <p className="text-slate-600">Cargando jugadores y estadísticas...</p>
         </div>
       ) : (
         <div className="space-y-6">

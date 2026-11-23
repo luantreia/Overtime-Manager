@@ -112,7 +112,7 @@ const TemporadasPage = () => {
                             : 'bg-blue-100 text-blue-800'
                           : temporada.estado === 'baja'
                           ? 'bg-red-100 text-red-800'
-                          : 'bg-gray-100 text-gray-800'
+                          : 'bg-slate-100 text-slate-800'
                       }`}>
                         {temporada.estado === 'activo'
                           ? estaProxima

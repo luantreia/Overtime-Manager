@@ -390,7 +390,7 @@ const PlayerProfilePage: React.FC = () => {
                 <h3 className="text-lg font-semibold">Administradores</h3>
                 <button
                   onClick={() => setIsAdminModalOpen(true)}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-700"
                 >
                   Gestionar
                 </button>

@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../providers/AuthContext';
 import PlayerSelector from '../../features/jugadores/components/PlayerSelector';
-import { getSolicitudesEdicion } from '../../shared/features/solicitudes';
-import { useJugador } from '../providers/JugadorContext';
+import { usePendientesDelJugador } from '../hooks/usePendientesDelJugador';
 // removed feature flag usage
 
 const links = [
@@ -20,30 +19,9 @@ const links = [
 
 export default function Navbar() {
   const { isAuthenticated } = useAuth();
-  const { jugadorSeleccionado } = useJugador();
   const [open, setOpen] = useState(false);
-  const [pendientes, setPendientes] = useState<number>(0);
+  const pendientes = usePendientesDelJugador();
   // feature flags removed
-
-  useEffect(() => {
-    let mounted = true;
-    const cargar = async () => {
-      try {
-        const resp = await getSolicitudesEdicion({ estado: 'pendiente' as any });
-        const jId = jugadorSeleccionado?.id;
-        const count = jId ? (resp.solicitudes || []).filter((s: any) => {
-          const dp = s?.datosPropuestos || {};
-          return s?.entidad === jId || dp?.jugadorId === jId || dp?.jugador === jId || JSON.stringify(dp).includes(jId);
-        }).length : 0;
-        if (mounted) setPendientes(count);
-      } catch {
-        if (mounted) setPendientes(0);
-      }
-    };
-    void cargar();
-    const id = window.setInterval(cargar, 30000);
-    return () => { mounted = false; window.clearInterval(id); };
-  }, [jugadorSeleccionado?.id]);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `block rounded-lg px-3 py-2 transition-colors ${isActive ? 'bg-brand-100 text-brand-700' : 'hover:bg-slate-100'}`;

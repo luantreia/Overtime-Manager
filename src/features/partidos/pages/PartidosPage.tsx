@@ -170,7 +170,7 @@ const PartidosPage = () => {
             <button
               type="button"
               onClick={() => setCrearOpen((o) => !o)}
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-700"
             >
               {crearOpen ? 'Cancelar' : 'Crear Amistoso'}
             </button>

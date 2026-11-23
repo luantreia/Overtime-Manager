@@ -134,11 +134,11 @@ const ModalSolicitarIngreso: React.FC<Props> = ({ jugadorId, initialEquipoId, is
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           <div>
             <label htmlFor="modalsolicitaringreso-desde-opcional" className="block text-sm font-medium text-slate-700">Desde (opcional)</label>
-            <input id="modalsolicitaringreso-desde-opcional" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" />
+            <input id="modalsolicitaringreso-desde-opcional" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} className="mt-1 block w-full rounded-md border-slate-300" />
           </div>
           <div>
             <label htmlFor="modalsolicitaringreso-hasta-opcional" className="block text-sm font-medium text-slate-700">Hasta (opcional)</label>
-            <input id="modalsolicitaringreso-hasta-opcional" type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300" />
+            <input id="modalsolicitaringreso-hasta-opcional" type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} className="mt-1 block w-full rounded-md border-slate-300" />
           </div>
         </div>
 
