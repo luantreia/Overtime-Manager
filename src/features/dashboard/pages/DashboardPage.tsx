@@ -55,7 +55,7 @@ const DashboardPage = () => {
           if (!fecha || Number.isNaN(fecha.getTime())) return false;
           const fechaSinHora = new Date(fecha);
           fechaSinHora.setHours(0, 0, 0, 0);
-          return fechaSinHora.getTime() >= hoy.getTime() && p.estado !== 'cancelado';
+          return fechaSinHora.getTime() >= hoy.getTime() && p.estado !== 'cancelado' && p.estado !== 'suspendido';
         })
         .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
 

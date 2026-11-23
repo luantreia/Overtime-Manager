@@ -135,7 +135,7 @@ type BackendPartido = {
   equipoVisitante?: BackendEquipoRef | string;
   marcadorLocal?: number;
   marcadorVisitante?: number;
-  estado?: 'programado' | 'en_juego' | 'finalizado' | 'cancelado' | string;
+  estado?: 'programado' | 'en_juego' | 'finalizado' | 'suspendido' | 'cancelado' | string;
 };
 
 const mapCompetencia = (data?: BackendPartido['competencia']): Competencia | undefined => {
@@ -170,6 +170,8 @@ export const mapEstadoPartido = (estado?: BackendPartido['estado']): Partido['es
       return 'confirmado';
     case 'finalizado':
       return 'finalizado';
+    case 'suspendido':
+      return 'suspendido';
     case 'cancelado':
       return 'cancelado';
     default:
@@ -190,6 +192,8 @@ export const mapEstadoPartidoToBackend = (
       return 'en_juego';
     case 'finalizado':
       return 'finalizado';
+    case 'suspendido':
+      return 'suspendido';
     case 'cancelado':
       return 'cancelado';
     default:
