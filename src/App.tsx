@@ -9,6 +9,8 @@ import EntrenamientosPage from './features/entrenamientos/pages/EntrenamientosPa
 import NotificacionesPage from './features/notificaciones/pages/NotificacionesPage';
 import PerfilPage from './features/perfil/pages/PerfilPage';
 import LoginPage from './features/auth/pages/LoginPage';
+import OlvidePasswordPage from './features/auth/pages/OlvidePasswordPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 import ClaimPage from './features/auth/pages/ClaimPage';
 import ProtectedRoute from './app/routes/ProtectedRoute';
 // auth not required here; routing uses `ProtectedRoute` to guard routes
@@ -32,6 +34,8 @@ const App = () => {
   const rutas = (
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/olvide-password" element={<OlvidePasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           {/* Canje de invitaciones. Estaba en Overtime-Public, que no tiene sesión: el jugador
               creaba la cuenta ahí y quedaba parado en la app de los hinchas en vez de en la
               suya. Public conserva la ruta como redirección para las invitaciones ya enviadas. */}
